@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Write a Story</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+      
+        #write-story-section {
+            width: 90vw;
+            height: 90vh;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+        
+            border-radius: 8px;
+            text-align: center;
+        }
+        h2 {
+            color: #333;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        input[type="text"],
+        textarea ,select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 30%;
+            margin: auto;
+        }
+    </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="firebaseconfig.js"></script>
+    <script src="app.js"></script>
+</head>
+<body>
+    <nav class="nav-bar">
+        <div class="logo">
+            <a href="index.html"><img src="assets/logo.png" alt="Logo" class="logo-img"></a>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="read.html">Read</a></li>
+            <li><a href="write.html">Write</a></li>
+            <li><a href="profile.html">Your Account</a></li>
+        </ul>
+    </nav>
+    <div id="write-story-section">
+        <h2 id="page-title">Write a Story</h2>
+        <form id="story-form">
+            <input type="text" id="story-title" placeholder="Story Title" required>
+            <input type="text" id="story-description" placeholder="description">
+                
+    <select id="story-genre" required>
+        <option value="" disabled selected>Select Genre</option>
+        <option value="Adventure">Adventure</option>
+        <option value="Romance">Romance</option>
+        <option value="Fantasy">Fantasy</option>
+        <option value="Science Fiction">Science Fiction</option>
+        <option value="Mystery">Mystery</option>
+        <option value="Horror">Horror</option>
+        <option value="Thriller">Thriller</option>
+    </select>
+            <textarea id="story-content" placeholder="Write your story here..." rows="10" required></textarea>
+            <div class="btns">
+            <button type="button" onclick="submitStory()">Publish Story</button>
+            <button type="button" onclick="generateStory() ">generate Story</button></div>
+        </form>
+    </div>
+
+    <script>
+        const firebaseConfig = myfirebaseConfig;
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        let storyId = null;
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            // Check if storyId is passed in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            storyId = urlParams.get("storyId");
+
+            if (storyId) {
+                document.getElementById("page-title").textContent = "Edit Your Story";
+                document.querySelector("button").textContent = "Update Story";
+                loadStoryForEditing(storyId);
+            }
+        });
+
+
+
+        // Load story data for editing
+        async function loadStoryForEditing(storyId) {
+            try {
+                const storyDoc = await db.collection("stories").doc(storyId).get();
+                if (storyDoc.exists) {
+                    const storyData = storyDoc.data();
+                    document.getElementById("story-title").value = storyData.title;
+                    document.getElementById("story-description").value = storyData.description;
+                    document.getElementById("story-genre").value = storyData.genre;
+                    document.getElementById("story-content").value = storyData.content;
+                } else {
+                    alert("Story not found.");
+                }
+            } catch (error) {
+                console.error("Error loading story:", error);
+                alert("Failed to load story. Please try again.");
+            }
+        }
+
+        auth.onAuthStateChanged(user => {
+            const writeStorySection = document.getElementById("write-story-section");
+            if (user) {
+                writeStorySection.style.display = "block";
+            } else {
+                writeStorySection.style.display = "none";
+                alert("Please log in to write a story.");
+                window.location.href = "login.html";
+            }
+        });
+
+        async function submitStory() {
+            const title = document.getElementById("story-title").value;
+            const description = document.getElementById("story-description").value;
+            const genre = document.getElementById("story-genre").value;
+            const content = document.getElementById("story-content").value;
+            const userId = auth.currentUser.uid;
+
+            try {
+                const userDoc = await db.collection("users").doc(userId).get();
+                if (!userDoc.exists) {
+                    throw new Error("User profile not found.");
+                }
+                const { username, penName } = userDoc.data();
+                const coverImageUrl = `https://image.pollinations.ai/prompt/${title}`;
+
+                if (storyId) {
+                    await updateStory(storyId, title,description,genre, content, coverImageUrl);
+                    alert("Story updated successfully!");
+                } else {
+                    await saveStory(userId, username, penName, title,description,genre, content, coverImageUrl);
+                    alert("Story submitted successfully!");
+                }
+
+                document.getElementById("story-form").reset();
+                window.location.href = "read.html"; // Redirect to the read page after submission
+            } catch (error) {
+                console.error("Error submitting story:", error);
+                alert("Failed to submit story. Please try again.");
+            }
+           content.value="";
+        }
+
+        function saveStory(userId, username, penName, title,description,genre, content, coverImageUrl) {
+            return db.collection("stories").add({
+                userId: userId,
+                username: username,
+                penName: penName,
+                title: title,
+                description: description,
+                genre: genre,
+                content: content,
+                coverImageUrl: coverImageUrl,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        function updateStory(storyId, title,description,genre, content, coverImageUrl) {
+            return db.collection("stories").doc(storyId).update({
+                title: title,
+                description: description,
+                genre: genre,
+                content: content,
+                coverImageUrl: coverImageUrl,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+    </script>
+</body>
+</html>

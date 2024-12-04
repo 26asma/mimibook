@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Page - Stories</title>
+   <link rel="stylesheet" href="style.css">
+
+</head>
+<style>
+
+.panel {
+
+  height: 60vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+
+  overflow: hidden;
+  background-color:#ccaa8285;
+}
+
+.home-content {
+  max-width: 700px;
+  padding: 1rem;
+  z-index: 2; /* Ensures text appears above the background */
+  animation: fadeIn 2s ease-in-out;
+}
+
+.heading {
+  font-size: 4rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  /* color: transparent; */
+  color: #343a40;
+  /* background: linear-gradient(90deg, #f5f5dc, #343a40); */
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.heading span {
+  display: inline-block;
+  position: relative;
+  animation: slideIn 1s ease-in-out both;
+}
+
+.heading::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 3px;
+  background: #494949;
+  border-radius: 50px;
+  animation: growLine 1.5s ease-in-out forwards;
+}
+
+.subtext {
+  font-size: 1.4rem;
+  font-weight: 300;
+  margin-top: 1rem;
+  line-height: 1.8;
+ color: #343a40;
+  /* text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6); */
+  animation: fadeInUp 2s ease-in-out;
+}
+
+/* Animations */
+@keyframes slideIn {
+  0% {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes growLine {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 50%;
+  }
+}
+
+</style>
+
+<body>
+
+
+  <header>
+    <nav class="nav-bar">
+      <!-- Logo -->
+      <div class="logo">
+        <a href="index.html"><img src="assets/logo.png" alt="Logo" class="logo-img"></a>
+      </div>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="read.html">Read</a></li>
+        <li><a href="write.html">Write</a></li>
+        <li><a href="profile.html">Your Account</a></li>
+      </ul>
+    </nav>
+  </header>
+  
+  <div class="panel">
+    <div class="home-content">
+      <h1 class="heading">
+        <span>Mimi Book</span>
+      </h1>
+      <p class="subtext">
+        Your gateway to countless stories, endless adventures, and a passionate reading community.
+      </p>
+    </div>
+    <div class="home-img">
+      <img src="assets/background.png" alt="">
+    </div>
+  </div>
+  
+  
+  <div class="story-container" id="story-container">
+    <!-- Story cards will be dynamically added here -->
+  </div>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="firebaseconfig.js"></script>
+
+  <script src="app.js"></script>
+  <script>
+    // Firebase configuration
+    const firebaseConfig = myfirebaseConfig;
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Function to display stories
+    async function loadStories() {
+      const storiesSnapshot = await db.collection("stories").get();
+      const storyContainer = document.getElementById("story-container");
+
+      storiesSnapshot.forEach(doc => {
+        const story = doc.data();
+        const storyId = doc.id;
+        const storyCard = document.createElement("div");
+        storyCard.classList.add("story-card");
+
+        storyCard.innerHTML = `
+                    <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${storyId}')">
+                    <div class="story-title">${story.title}</div>
+                    <div class="story-author">By ${story.username}</div>
+                   <div class="story-actions">
+    <button class="like-btn" onclick="likeStory('${storyId}')">Like (${story.likes ? Object.keys(story.likes).length : 0})</button>
+ 
+</div>`;
+
+        storyContainer.appendChild(storyCard);
+      });
+    }
+
+
+
+   
+
+    // Load stories on page load
+    window.onload = loadStories;
+  </script>
+</body>
+
+</html>

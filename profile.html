@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .profile-page{
+            display: flex;
+        }
+        .sidebar{
+            background-color: #F9F9F9;
+            width: 15%;
+            height: 100vh;
+            position: fixed;
+            padding: 20px 5px;
+            display:flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        .main-content{
+            margin-left: 15%;
+            width: 100%;
+        }
+        h2{
+            padding: 20px;  
+        }
+        .story-container{
+             margin: 0;
+             padding: 20px 0 0 20px;
+            
+        }
+ 
+     
+    </style>
+</head>
+<body>
+    <div class="profile-page">
+        <aside class="sidebar">
+            <div class="profile-img-container">
+                <img id="profile-img" src="" alt="Profile Image" class="rounded-profile">
+            
+        
+            </div>
+            <h3 id="username">Username</h3>
+            <h4 id="pen-name">Pen Name</h4>
+            <button onclick="logoutUser()">Logout</button>
+        </aside>
+
+        <section class="main-content">
+            <nav class="nav-bar">
+                <div class="logo">
+                    <a href="index.html"><img src="assets/logo.png" alt="Logo" class="logo-img"></a>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="read.html">Read</a></li>
+                    <li><a href="write.html">Write</a></li>
+                    <li><a href="profile.html">Your Account</a></li>
+                </ul>
+            </nav>
+            <h2>My Stories</h2>
+            <div class="story-container">
+                <p id="no-stories-message">You have not written a story yet. <a href="write.html">write your first story</a></p>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="firebaseconfig.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = myfirebaseConfig;
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    loadUserProfile(user.uid);
+                    loadUserStories(user.uid);
+                } else {
+                    window.location.href = "user.html";
+                }
+            });
+        });
+
+    
+    </script>
+</body>
+</html>

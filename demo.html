@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="section" id="most-liked-section">
+        <h2>Most Liked Stories</h2>
+        <div class="story-container" id="most-liked-container">
+          <!-- Most liked stories will be dynamically added here -->
+        </div>
+      </div>
+      
+      <div class="section" id="must-read-section">
+        <h2>Must Read Stories</h2>
+        <div class="story-container" id="must-read-container">
+          <!-- Must-read stories will be dynamically added here -->
+        </div>
+      </div>
+      
+      <div class="section" id="genre-section">
+        <h2>Stories by Genre</h2>
+        <div class="story-container" id="genre-container">
+          <!-- Genre-based stories will be dynamically added here -->
+        </div>
+      </div>
+      
+    <script>async function loadMostLikedStories() {
+        const storiesSnapshot = await db.collection('stories')
+          .orderBy(likes.length, 'desc')  // Assuming you store the count of likes in a 'likesCount' field
+          .limit(5)  // Limit to top 5 most liked stories
+          .get();
+      
+        const mostLikedContainer = document.getElementById('most-liked-container');
+        mostLikedContainer.innerHTML = ''; // Clear previous results
+      
+        storiesSnapshot.forEach(doc => {
+          const story = doc.data();
+          const storyCard = document.createElement('div');
+          storyCard.classList.add('story-card');
+          storyCard.innerHTML = `
+            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${doc.id}')">
+            <div class="story-title">${story.title}</div>
+            <div class="story-author">By ${story.username}</div>
+            <div class="story-actions">
+              <button class="like-btn" onclick="likeStory('${doc.id}')">Like (${story.likes ? Object.keys(story.likes).length : 0})</button>
+            </div>
+          `;
+          mostLikedContainer.appendChild(storyCard);
+        });
+      }
+      
+      async function loadMustReadStories() {
+        const storiesSnapshot = await db.collection('stories')
+          .where('isMustRead', '==', true)  // Assuming you have a boolean field 'isMustRead'
+          .get();
+      
+        const mustReadContainer = document.getElementById('must-read-container');
+        mustReadContainer.innerHTML = ''; // Clear previous results
+      
+        storiesSnapshot.forEach(doc => {
+          const story = doc.data();
+          const storyCard = document.createElement('div');
+          storyCard.classList.add('story-card');
+          storyCard.innerHTML = `
+            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${doc.id}')">
+            <div class="story-title">${story.title}</div>
+            <div class="story-author">By ${story.username}</div>
+            <div class="story-actions">
+              <button class="like-btn" onclick="likeStory('${doc.id}')">Like (${story.likes ? Object.keys(story.likes).length : 0})</button>
+            </div>
+          `;
+          mustReadContainer.appendChild(storyCard);
+        });
+      }
+      
+      async function loadStoriesByGenre(genre) {
+        const storiesSnapshot = await db.collection('stories')
+          .where('genre', '==', genre)  // Assuming you have a 'genre' field
+          .get();
+      
+        const genreContainer = document.getElementById('genre-container');
+        genreContainer.innerHTML = ''; // Clear previous results
+      
+        storiesSnapshot.forEach(doc => {
+          const story = doc.data();
+          const storyCard = document.createElement('div');
+          storyCard.classList.add('story-card');
+          storyCard.innerHTML = `
+            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${doc.id}')">
+            <div class="story-title">${story.title}</div>
+            <div class="story-author">By ${story.username}</div>
+            <div class="story-actions">
+              <button class="like-btn" onclick="likeStory('${doc.id}')">Like (${story.likes ? Object.keys(story.likes).length : 0})</button>
+            </div>
+          `;
+          genreContainer.appendChild(storyCard);
+        });
+      }
+      
+      // Call the load functions on page load
+      window.onload = function() {
+        loadMostLikedStories();
+        loadMustReadStories();
+        loadStoriesByGenre('Fiction'); // Example genre, you can dynamically change it
+      };
+      </script>
+      <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+  <script src="firebaseconfig.js"></script>
+</body>
+</html>

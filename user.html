@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mimispot-Login and Register</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+      
+body{
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    align-items: center;
+}
+
+        #auth-section {
+            background: #e4d3be;
+            width:50vw;
+            padding: 30px;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+    
+        h1 {
+            text-align: center;
+            color: #444;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #555;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        /* Input Styles */
+        .input-group {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            padding-left: 40px;
+            border: 1px solid #ddd;
+            
+            outline: none;
+            font-size: 1em;
+            color: #333;
+            transition: all 0.3s;
+        }
+
+        .input-group label {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 0.9em;
+            pointer-events: none;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus + label,
+        .input-group input:not(:placeholder-shown) + label {
+            top: -8px;
+            background: #949393;
+            padding: 0 5px;
+            font-size: 0.75em;
+            color: beige;
+        }
+
+        /* Button */
+        button {
+            width: 100%;
+            padding: 12px;
+           
+            border: none;
+            
+            font-size: 1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+      
+
+        /* Link */
+        p {
+            text-align: center;
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 15px;
+        }
+
+        p a {
+            color:#999992;;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        /* Toggle Sections */
+        #login-section, #register-form {
+            opacity: 0;
+            display: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #login-section.active, #register-form.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Show login by default */
+        #login-section.active {
+            display: block;
+            opacity: 1;
+        }
+        .side-img{
+            background-image: url(assets/background.png);
+            background-repeat: no-repeat;
+            background-size: cover;
+            width: 50vw;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="side-img">
+
+    </div>
+
+    <div id="auth-section">
+        <!-- Login Form -->
+        <div id="login-section" class="active">
+            <h3>Login</h3>
+            <div class="input-group">
+                <input type="email" id="login-email" placeholder=" " required>
+                <label for="login-email">Email</label>
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-password" placeholder=" " required>
+                <label for="login-password">Password</label>
+            </div>
+            <button onclick="loginUser()">Login</button>
+            <p>Don't have an account? <a href="#" onclick="toggleSection()">Register</a></p>
+        </div>
+
+        <!-- Register Form -->
+        <form id="register-form">
+            <h3>Register</h3>
+            <div class="input-group">
+                <input type="email" id="register-email" placeholder=" " required>
+                <label for="register-email">Email</label>
+            </div>
+            <div class="input-group">
+                <input type="password" id="register-password" placeholder=" " required>
+                <label for="register-password">Password</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="register-username" placeholder=" " required>
+                <label for="register-username">Username</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="register-penname" placeholder=" " required>
+                <label for="register-penname">Pen Name</label>
+            </div>
+            <button type="button" onclick="registerUser()">Register</button>
+            <p>Already have an account? <a href="#" onclick="toggleSection()">Login</a></p>
+        </form>
+    </div>
+
+    <!-- Firebase CDN links for SDK version 8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebaseconfig.js"></script>
+
+    <script>
+        //  Firebase configuration
+        const firebaseConfig = myfirebaseConfig;
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Toggle between login and register sections
+        function toggleSection() {
+            document.getElementById("login-section").classList.toggle("active");
+            document.getElementById("register-form").classList.toggle("active");
+        }
+
+        // Register user
+        function registerUser() {
+            const email = document.getElementById("register-email").value;
+            const password = document.getElementById("register-password").value;
+            const username = document.getElementById("register-username").value;
+            const penName = document.getElementById("register-penname").value;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then(cred => {
+                    return db.collection("users").doc(cred.user.uid).set({
+                        username: username,
+                        penName: penName,
+                        profileImageUrl: `https://ui-avatars.com/api/?background=343A40&color=ccaa82&name=${encodeURIComponent(username)}`
+                    });
+                })
+                .then(() => {
+                    alert("Registration successful!");
+                    toggleSection();
+                    window.location.href = "profile.html";
+                })
+                .catch(error =>{ console.log("Error: " + error.message);
+                    alert("username already exist")
+                });
+        }
+
+        // Login user
+        function loginUser() {
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+
+    auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+            window.location.href = "profile.html";
+        })
+        .catch(error => {
+            console.log("Error: " + error.message); 
+            alert("Invalid username or password");  
+        });
+}
+
+    </script>
+</body>
+</html>

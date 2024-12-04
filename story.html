@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story</title>
+  
+    <link rel="stylesheet" href="style.css">
+    <style>
+
+        .story-details {
+            
+            background-color: #fff;
+           
+            border-radius: 8px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+   
+
+
+        .story-cover{
+            width:250px;
+            height: 250px;
+        }
+        .story-cover img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+      
+        .story-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+     
+        .story-author {
+            font-size: 18px;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+
+       
+        .story-content {
+            font-size: 18px;
+            line-height: 1.8;
+            color: #333;
+            white-space: pre-wrap;
+            margin-bottom: 30px;
+            width: 80%;
+    margin: auto;
+    padding: 20px;
+        }
+        .story-action{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+     
+#audio-player{
+    padding: 10px;
+}
+#audio-player::-webkit-media-controls-play-button {
+   color: black;
+   padding: 0;
+}
+#audio-player::-webkit-media-controls-panel {
+    background-color:white;
+    border: 1px solid black;
+    border-radius: 0;
+    padding: 5px;
+   
+}
+
+#audio-player::-webkit-media-controls-volume-slider {
+
+    border-radius: 5px;
+  
+}
+
+
+#audio-player::-webkit-media-controls-timeline {
+    
+    padding-right:5px;
+}
+
+
+     
+
+    </style>
+
+</head>
+<body>
+    <header>
+        <nav class="nav-bar">
+          <!-- Logo -->
+          <div class="logo">
+            <a href="index.html"><img src="assets/logo.png" alt="Logo" class="logo-img"></a>
+          </div>
+    
+          <!-- Navigation Links -->
+          <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="read.html">Read</a></li>
+            <li><a href="write.html">Write</a></li>
+            <li><a href="profile.html">Your Account</a></li>
+          </ul>
+        </nav>
+      </header>
+    <!-- <button class="toggle-btn" onclick="toggleMode()">Switch to Dark Mode</button> -->
+
+    <div class="story-details" id="story-details">
+       
+        <!-- Story details will be dynamically added here -->
+    </div>
+
+    <!-- Firebase CDN links for SDK version 8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebaseconfig.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = myfirebaseConfig;
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Firestore
+        const db = firebase.firestore();
+
+        // Initialize Firebase Auth
+        const auth = firebase.auth();
+       
+       
+        const urlParams = new URLSearchParams(window.location.search);
+        const storyId = urlParams.get('id');
+
+        // Fetch the story from Firestore
+        async function loadStory() {
+            try {
+                const storyDoc = await db.collection("stories").doc(storyId).get();
+                if (!storyDoc.exists) {
+                    alert("Story not found.");
+                    return;
+                }
+                const story = storyDoc.data();
+
+                const storyDetails = document.getElementById("story-details");
+                storyDetails.innerHTML = `
+                <div class="story-head">
+                    <div class="story-cover"><img src="${story.coverImageUrl}" alt="Story Cover"></div>
+                    <div class="story-info">
+                    <div class="story-title">${story.title}</div>
+                    <div class="story-author">By ${story.username}</div>
+                    <button class="read-story" onclick="readStory('${storyId}')">listen</button>
+                    <audio id="audio-player" controls style="display:none"></audio>
+                    </div></div>
+                    <div class="page">
+                    <div class="story-content">${story.content}</div></div>
+                    <div class="story-action">
+                    <button class="like-btn" onclick="likeStory('${storyId}')">Like (${story.likes ? Object.keys(story.likes).length : 0})</button>
+                   <button class="comment-toggle-btn" onclick="toggleComments('${storyId}')">
+        Comments
+    </button></div>
+    <div class="comment-section" id="comment-section-${storyId}" style="display: none;">
+        <div class="comms">
+        <textarea class="comment-input" id="comment-input-${storyId}" placeholder="Add your comment..."></textarea>
+        <button class="comment-btn" onclick="addComment('${storyId}')">Post Comment</button>
+        <div id="comments-list-${storyId}" class="comments-list"></div>
+    </div>
+                `;
+                loadComments(storyId);
+            } catch (error) {
+                console.error("Error fetching story:", error);
+            }
+        }
+
+        window.onload = loadStory;
+    </script>
+</body>
+</html>

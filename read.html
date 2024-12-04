@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read Stories</title>
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        h2 {
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 30px;
+            color: #4A4A4A;
+        }
+
+        .search-bar {
+            display: flex;
+            justify-content: center;
+            /* margin-bottom: 30px; */
+            padding: 10px;
+            background: #ffffff;
+            width: 40%;
+        }
+
+        .search-bar input {
+            /* padding: 12px; */
+            width: 100%;
+
+            font-size: 16px;
+            border: none;
+        }
+
+
+        .search-bar button {
+            background: white;
+            color: black;
+        }
+
+
+        .story-card {
+            display: flex;
+            flex-wrap: wrap;
+
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="nav-bar">
+        <!-- Logo -->
+        <div class="logo">
+            <a href="index.html"><img src="assets/logo.png" alt="Logo" class="logo-img"></a>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search by title or author...">
+            <button onclick="searchStories()">Search</button>
+        </div>
+
+        <!-- Navigation Links -->
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="read.html">Read</a></li>
+            <li><a href="write.html">Write</a></li>
+            <li><a href="profile.html">Your Account</a></li>
+        </ul>
+    </nav>
+
+
+
+    <div class="container">
+
+
+
+        <!-- Story Cards -->
+        <div class="story-container" id="story-cards-container">
+            <!-- Stories will be dynamically displayed here -->
+        </div>
+    </div>
+
+    <!-- Firebase CDN links for SDK version 8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebaseconfig.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+     
+        const firebaseConfig = myfirebaseConfig;
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Firestore
+        const db = firebase.firestore();
+
+        // Function to fetch all stories from Firestore
+        async function loadStories() {
+            try {
+                const storiesSnapshot = await db.collection('stories').get();
+                const storiesContainer = document.getElementById('story-cards-container');
+                storiesContainer.innerHTML = ''; // Clear previous results
+
+                storiesSnapshot.forEach(doc => {
+                    const story = doc.data();
+                    const storyId = doc.id;
+                    const storyCard = document.createElement('div');
+                    storyCard.classList.add('story-card');
+                    storyCard.innerHTML = `
+                       <img src="${story.coverImageUrl}" alt="Cover Image" onclick="openStory('${storyId}')">
+                        <div class="content">
+                            <div class="story-title">${story.title}</div>
+                            <div class="story-author">By ${story.username}</div>
+                               <div class="description">${story.description ? story.description : story.content.substring(0, 150)}</div>
+                            <button class="read-button"  onclick="openStory('${storyId}')">Read Story</button>
+                        </div>
+                    `;
+                    storiesContainer.appendChild(storyCard);
+                });
+            } catch (error) {
+                console.error("Error fetching stories:", error);
+            }
+        }
+
+    
+        window.onload = loadStories;
+    </script>
+</body>
+
+</html>

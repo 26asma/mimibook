@@ -1,0 +1,213 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+
+    color: #333; /* Darker text color for readability */
+    line-height: 1.6;
+}
+
+/* Navigation Styling */
+nav {
+    background-color: #343A40; /* Dark Slate Gray for the nav */
+   
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 30px;
+}
+
+
+.logo img {
+    width: 150px; /* Logo size */
+}
+
+.nav-links {
+    display: flex;
+    list-style-type: none;
+}
+
+.nav-links li {
+    margin-left: 20px;
+}
+
+.nav-links a {
+    color: #ccaa82; /* Light Beige for the nav text */
+    text-decoration: none;
+    font-size: 18px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #F5F5DC; /* Hover effect in warm yellow */
+}
+
+
+
+
+
+/* Story Container Styling */
+.story-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 40px 20px;
+    margin-top: 40px;
+}
+
+.story-card {
+    background-color: #ccaa8285;
+    /* border-radius: 10px; */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.story-card:hover {
+    transform: translateY(-5px); /* Smooth hover effect */
+}
+
+.story-card img {
+    width: 100%;
+    
+    object-fit: cover;
+}
+
+.story-card .story-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    padding: 10px;
+    
+}
+
+.story-card .story-author {
+    font-size: 14px;
+    color: #888;
+    padding: 5px 10px;
+   
+}
+
+.story-card .story-actions {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 10px;
+   
+}
+
+ button {
+    background-color: #343A40; /* Dark Slate Gray for buttons */
+    color: #F5F5DC; /* Light Beige text */
+    border: none;
+    padding: 8px 15px;
+    font-size: 16px;
+   
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.story-card .story-actions button:hover {
+    background-color: #c9c9bf;
+    color: #343A40; /* Hover effect in warm yellow */
+    transform: translateY(-3px);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .story-container {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        padding: 20px;
+    }
+
+    .nav-links li {
+        margin-left: 15px;
+    }
+
+    .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .logo img {
+        width: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .navbar {
+        padding: 10px;
+    }
+
+    .nav-links a {
+        font-size: 16px;
+    }
+}
+.content{
+    /* background: #F9F9F9;; */
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+}
+
+
+.comment-section {
+    margin-top: 10px;
+    
+    padding: 10px;
+    border-radius: 5px;
+    background-color:#ccaa8285;;
+}
+
+.comment-input {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.comments-list {
+    margin-top: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+.story-head {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-color: #ccaa8285;;
+}
+.story-info {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+}
+.comms{
+    width:80%;
+    margin: auto;
+}
+.commenter{
+    font-size: 18px;
+    font-weight: bold;
+}
+.btns{
+    display: flex;
+    gap: 10px;
+}
+.btns button{
+    width: 200px;
+}
