@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home Page - Stories</title>
    <link rel="stylesheet" href="style.css">
-
+   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <style>
 
@@ -114,7 +114,18 @@
     width: 50%;
   }
 }
-
+.info{
+  display: flex;
+    align-items: start;
+    justify-content: space-between;
+}
+.info div{
+  display: flex;
+    flex-direction: column;
+}
+.story-actions i{
+padding: 0 10px;
+}
 </style>
 
 <body>
@@ -129,14 +140,27 @@
 
       <!-- Navigation Links -->
       <ul class="nav-links">
-        <li><a href="index.html">Home</a></li>
+        <li ><a class="active" href="index.html">Home</a></li>
         <li><a href="read.html">Read</a></li>
         <li><a href="write.html">Write</a></li>
         <li><a href="profile.html">Your Account</a></li>
       </ul>
     </nav>
   </header>
-  
+  <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #ccaa8285; position: fixed; width: 100%; top: 0; z-index: 10;">
+    <div class="loader">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
+  <div class="alert-overlay" id="customAlert">
+    <div class="alert-box">
+      <h2 id="alertTitle">Alert</h2>
+      <p id="alertMessage">This is a message.</p>
+      <button onclick="closeAlert()">OK</button>
+    </div>
+  </div>
   <div class="panel">
     <div class="home-content">
       <h1 class="heading">
@@ -154,6 +178,7 @@
   
   <div class="story-container" id="story-container">
     <!-- Story cards will be dynamically added here -->
+ 
   </div>
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -174,28 +199,41 @@
 
     // Function to display stories
     async function loadStories() {
-      const storiesSnapshot = await db.collection("stories").get();
-      const storyContainer = document.getElementById("story-container");
+    showLoader();
+    const storiesSnapshot = await db.collection("stories").get();
+    const storyContainer = document.getElementById("story-container");
 
-      storiesSnapshot.forEach(doc => {
+    storyContainer.innerHTML = ""; // Clear previous stories
+
+    storiesSnapshot.forEach(doc => {
         const story = doc.data();
         const storyId = doc.id;
+        const userId = firebase.auth().currentUser.uid;
+        const isLiked = story.likes && story.likes[userId];
+
         const storyCard = document.createElement("div");
         storyCard.classList.add("story-card");
 
         storyCard.innerHTML = `
-                    <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${storyId}')">
+            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${storyId}')">
+            <div class="info">
+                <div>
                     <div class="story-title">${story.title}</div>
-                    <div class="story-author">By ${story.username}</div>
-                   <div class="story-actions">
-    <button class="like-btn" onclick="likeStory('${storyId}')">Like (${story.likes ? Object.keys(story.likes).length : 0})</button>
- 
-</div>`;
+                    <div class="story-author">By ${story.penName}</div>
+                </div>
+                <div class="story-actions">
+                    <button class="like-btn">
+                        <i class="fa fa-heart ${isLiked ? "liked" : ""}" 
+                           onclick="likeStory('${storyId}', event)"></i>
+                        <span>${story.likes ? Object.keys(story.likes).length : 0}</span>
+                    </button>
+                </div>
+            </div>`;
 
         storyContainer.appendChild(storyCard);
-      });
-    }
-
+    });
+    hideLoader();
+}
 
 
    

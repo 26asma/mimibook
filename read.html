@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
+
         h2 {
             text-align: center;
             font-size: 32px;
@@ -20,31 +21,56 @@
             justify-content: center;
             /* margin-bottom: 30px; */
             padding: 10px;
-            background: #ffffff;
+            background: transparent;
             width: 40%;
+            border: 1px solid #ccaa82;
         }
 
         .search-bar input {
             /* padding: 12px; */
             width: 100%;
-
+            background: transparent;
             font-size: 16px;
             border: none;
+            color:#ccaa82;
         }
-
-
+    
+      
         .search-bar button {
-            background: white;
-            color: black;
+            background: transparent;
+            color: #ccaa82;
         }
-
-
-        .story-card {
-            display: flex;
-            flex-wrap: wrap;
-
-            justify-content: center;
-        }
+.filter-container{
+    display: flex;
+    justify-content: flex-end;
+    padding: 15px;
+    gap: 15px;
+    color:#ccaa82;
+    font-size: 18px;
+    font-weight: 500;
+    background-color: #343a40;
+}
+.filter-container select{
+border: 1px solid #343a40 ;
+background: transparent;
+border: 1px solid #ccaa82;
+}
+.info div{
+    display: flex
+;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+  .info{
+    display: flex
+;
+    align-items: center;
+    justify-content: space-between;
+    flex-direction: column;
+      
+  }
+    
     </style>
 </head>
 
@@ -57,7 +83,7 @@
 
         <!-- Search Bar -->
         <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Search by title or author...">
+            <input type="text" id="search-input" placeholder="Search by title ...">
             <button onclick="searchStories()">Search</button>
         </div>
 
@@ -65,12 +91,25 @@
         <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
             <li><a href="read.html">Read</a></li>
-            <li><a href="write.html">Write</a></li>
+            <li><a class="active" href="write.html">Write</a></li>
             <li><a href="profile.html">Your Account</a></li>
         </ul>
     </nav>
 
-
+    <div class="filter-container">
+        <label for="genre-filter">Filter by Genre</label>
+        <select id="genre-filter" onchange="filterStories()">
+            <option value="all">All</option>
+            <option value="Adventure">Adventure</option>
+        <option value="Romance">Romance</option>
+        <option value="Fantasy">Fantasy</option>
+        <option value="Science Fiction">Science Fiction</option>
+        <option value="Mystery">Mystery</option>
+        <option value="Horror">Horror</option>
+        <option value="Thriller">Thriller</option>
+        </select>
+    </div>
+    
 
     <div class="container">
 
@@ -89,7 +128,6 @@
     <script src="app.js"></script>
 
     <script>
-     
         const firebaseConfig = myfirebaseConfig;
 
         // Initialize Firebase
@@ -98,35 +136,56 @@
         // Initialize Firestore
         const db = firebase.firestore();
 
+        // Global variable to store all stories
+        let allStories = [];
+
         // Function to fetch all stories from Firestore
         async function loadStories() {
             try {
                 const storiesSnapshot = await db.collection('stories').get();
-                const storiesContainer = document.getElementById('story-cards-container');
-                storiesContainer.innerHTML = ''; // Clear previous results
-
-                storiesSnapshot.forEach(doc => {
-                    const story = doc.data();
-                    const storyId = doc.id;
-                    const storyCard = document.createElement('div');
-                    storyCard.classList.add('story-card');
-                    storyCard.innerHTML = `
-                       <img src="${story.coverImageUrl}" alt="Cover Image" onclick="openStory('${storyId}')">
-                        <div class="content">
-                            <div class="story-title">${story.title}</div>
-                            <div class="story-author">By ${story.username}</div>
-                               <div class="description">${story.description ? story.description : story.content.substring(0, 150)}</div>
-                            <button class="read-button"  onclick="openStory('${storyId}')">Read Story</button>
-                        </div>
-                    `;
-                    storiesContainer.appendChild(storyCard);
-                });
+                allStories = storiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // Store all stories
+                displayStories(allStories); // Display all stories
             } catch (error) {
                 console.error("Error fetching stories:", error);
+                
             }
         }
 
-    
+        // Function to display stories dynamically
+        function displayStories(stories) {
+            const storiesContainer = document.getElementById('story-cards-container');
+            storiesContainer.innerHTML = ''; // Clear previous results
+            stories.forEach(story => {
+                const storyCard = document.createElement('div');
+                storyCard.classList.add('story-card');
+                storyCard.innerHTML = `
+                    <img src="${story.coverImageUrl}" alt="Cover Image" onclick="openStory('${story.id}')">
+                    <div class="info">
+                        <div>
+                        <div class="story-title">${story.title}</div>
+                        <div class="story-author">By ${story.username}</div></div>
+                        <div class="description">${story.description ? story.description : story.content.substring(0, 150)}...</div>
+                        <button class="read-button" onclick="openStory('${story.id}')">Read Story</button>
+                    </div>
+                `;
+                storiesContainer.appendChild(storyCard);
+            });
+        }
+
+        // Function to filter stories by genre
+        function filterStories() {
+            const genre = document.getElementById("genre-filter").value;
+            if (genre === "all") {
+                displayStories(allStories); // Show all stories
+            } else {
+                const filteredStories = allStories.filter(story => story.genre.toLowerCase() === genre.toLowerCase());
+                displayStories(filteredStories);
+            }
+        }
+
+   
+
+        // Load stories on page load
         window.onload = loadStories;
     </script>
 </body>

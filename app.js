@@ -1,6 +1,70 @@
+function loadUserProfile(uid) {
+    const userRef = db.collection("users").doc(uid);
+    userRef.get().then(doc => {
+        if (doc.exists) {
+            const userData = doc.data();
+            profileimg=document.getElementById("profile-img")
+            profileimg.src=userData.profileImageUrl;
+            document.getElementById("username").textContent = userData.username;
+            document.getElementById("pen-name").textContent = userData.penName;
+          
+        }
+      
+    });
+}
+
+
+function loadUserStories() {
+    const userId = auth.currentUser.uid;
+    db.collection("stories").where("userId", "==", userId)
+        .orderBy("createdAt", "desc")
+        .get()
+        .then(snapshot => {
+            const storyList = document.querySelector(".story-container");
+            storyList.innerHTML = "";
+
+            snapshot.forEach(doc => {
+                const storyData = doc.data();
+                const storyItem = document.createElement("div");
+                storyItem.classList.add("story-card");
+
+                // Function to format the date
+                const formatDate = (timestamp) => {
+                    // If it's a Firestore Timestamp, convert it to a JavaScript Date object
+                    const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
+                    return date.toLocaleDateString(); // This will format the date (e.g., "12/6/2024")
+                };
+
+                // Get the display date (prioritize updatedAt, fallback to createdAt)
+                const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
+
+                // Set the innerHTML with formatted date
+                storyItem.innerHTML = `
+                    <div class="pro">
+                        <h4>${storyData.title}</h4>
+                        <div><button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
+                        <button onclick="editStory('${doc.id}', '${storyData.title}')"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteStory('${doc.id}')"><i class="fas fa-trash-alt"></i></button></div>
+                    </div>
+                    ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
+                    <p class="pro">Published on: ${displayDate}</p> <!-- Display the formatted date -->
+                `;
+
+                storyList.appendChild(storyItem);
+            });
+        })
+        .catch(error => {
+            console.error("Error loading stories:", error);
+            showAlert('Error','check your connection and try again')
+        });
+}
+
+
 // Like a story
-async function likeStory(storyId) {
+
+async function likeStory(storyId, event) {
     const userId = firebase.auth().currentUser.uid;
+    const heartIcon = event.target;
 
     try {
         const storyRef = db.collection("stories").doc(storyId);
@@ -9,20 +73,18 @@ async function likeStory(storyId) {
 
         if (likes[userId]) {
             delete likes[userId]; // Unlike if already liked
+            heartIcon.classList.remove("liked"); // Change heart color to white
         } else {
             likes[userId] = true; // Like the story
+            heartIcon.classList.add("liked"); // Change heart color to red
         }
 
         await storyRef.update({ likes });
-
-refreshPage();
-
-      
+        heartIcon.nextElementSibling.textContent = Object.keys(likes).length; // Update like count
     } catch (error) {
         console.error("Error updating likes:", error);
     }
 }
-
 // Toggle comments section visibility
 function toggleComments(storyId) {
     const commentSection = document.getElementById(`comment-section-${storyId}`);
@@ -70,7 +132,7 @@ async function addComment(storyId) {
     const text = commentInput.value.trim();
     const userId = firebase.auth().currentUser.uid;
 
-    if (!text) return alert("Comment cannot be empty!");
+    if (!text) return showAlert("Error","Comment cannot be empty!");
 
     try {
         const userDoc = await db.collection("users").doc(userId).get();
@@ -90,7 +152,7 @@ async function addComment(storyId) {
         loadComments(storyId); 
     } catch (error) {
         console.error("Error adding comment:", error);
-        alert("Failed to post comment.");
+        showAlert("Error","Error adding comment!try again.");
     }
 }
 
@@ -109,7 +171,7 @@ async function addComment(storyId) {
             // Fetch story details from Firebase
             const storyDoc = await db.collection("stories").doc(storyId).get();
             if (!storyDoc.exists) {
-                alert("Story not found.");
+                showAlert("Error","Story not found.");
                 return;
             }
             const story = storyDoc.data();
@@ -135,7 +197,7 @@ async function addComment(storyId) {
             audioPlayer.play();
         } catch (error) {
             console.error("Error generating speech:", error);
-            alert(`Error: ${error.message}`);
+            showAlert("Error","Try again later.")
         }
     }
 
@@ -179,47 +241,7 @@ async function addComment(storyId) {
             console.error("Error searching stories:", error);
         }
     }
-    function loadUserProfile(uid) {
-        const userRef = db.collection("users").doc(uid);
-        userRef.get().then(doc => {
-            if (doc.exists) {
-                const userData = doc.data();
-                profileimg=document.getElementById("profile-img")
-                profileimg.src=userData.profileImageUrl;
-                document.getElementById("username").textContent = userData.username;
-                document.getElementById("pen-name").textContent = userData.penName;
-              
-            }
-        });
-    }
 
-    function loadUserStories() {
-        const userId = auth.currentUser.uid;
-        db.collection("stories").where("userId", "==", userId)
-            .orderBy("createdAt", "desc")
-            .get()
-            .then(snapshot => {
-                const storyList = document.querySelector(".story-container");
-                storyList.innerHTML = "";
-
-                snapshot.forEach(doc => {
-                    const storyData = doc.data();
-                    const storyItem = document.createElement("div");
-                    storyItem.classList.add("story-card");
-                    storyItem.innerHTML = `
-                        <h3>${storyData.title}</h3>
-                        ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
-                        <button onclick="viewStory('${doc.id}')">View</button>
-                        <button onclick="editStory('${doc.id}', '${storyData.title}')">Edit</button>
-                        <button onclick="deleteStory('${doc.id}')">Delete</button>
-                    `;
-                    storyList.appendChild(storyItem);
-                });
-            })
-            .catch(error => {
-                console.error("Error loading stories:", error);
-            });
-    }
 
     function viewStory(storyId) {
         window.location.href = `story.html?id=${storyId}`;
@@ -228,14 +250,17 @@ async function addComment(storyId) {
     function editStory(storyId) {
 // Redirect to write.html with the story ID as a URL parameter
 window.location.href = `write.html?storyId=${storyId}`;
+let submit=document.getElementById('submit');
+submit.style.display="none";
 }
 
 
     function deleteStory(storyId) {
-        if (confirm("Are you sure you want to delete this story?")) {
+        // if (confirm("Are you sure you want to delete this story?")) {
+        if(showAlert('Are you sure you want to Delete','once deleted story can not be retrive again')){
             db.collection("stories").doc(storyId).delete()
                 .then(() => {
-                    alert("Story deleted successfully!");
+                    showAlert("status","Story deleted successfully")
                     loadUserStories();
                 })
                 .catch(error => {
@@ -251,7 +276,7 @@ window.location.href = `write.html?storyId=${storyId}`;
             window.location.href = "index.html";
         }).catch(error => {
             console.error("Error logging out:", error);
-            alert("Error logging out. Please try again.");
+            showAlert("Error","Error logging out. Please try again.");
         });
     }
 
@@ -283,6 +308,7 @@ window.location.href = `write.html?storyId=${storyId}`;
         try {
           const response = await fetch(url, options);
           if (!response.ok) {
+              showAlert("Error","Failed to generate!try again later.");
             throw new Error(`Failed to generate story: ${response.status}`);
           }
           const result = await response.json();
@@ -293,6 +319,7 @@ window.location.href = `write.html?storyId=${storyId}`;
           return result.result;
         } catch (error) {
             console.error('Error:', error.message);
+            showAlert("Error","can not Generate right now!try again later.")
         }
     }
       
@@ -313,9 +340,26 @@ window.location.href = `write.html?storyId=${storyId}`;
         }
     });
     
-    
+    // Function to display loader
+  function showLoader() {
+    document.getElementById("loader").style.display = "flex";
+  }
+
+  // Function to hide loader
+  function hideLoader() {
+    document.getElementById("loader").style.display = "none";
+  }
       
-      
-      
-   
-      
+  function showAlert(title, message) {
+    // Set the alert title and message
+    document.getElementById('alertTitle').innerText = title;
+    document.getElementById('alertMessage').innerText = message;
+
+    // Show the alert box
+    document.getElementById('customAlert').style.display = 'flex';
+  }
+
+  function closeAlert() {
+    // Hide the alert box
+    document.getElementById('customAlert').style.display = 'none';
+  }

@@ -32,7 +32,7 @@
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
-            border: 1px solid #ccc;
+            border: 1px solid #ccaa82;
             border-radius: 5px;
             font-size: 16px;
         }
@@ -57,13 +57,21 @@
         <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
             <li><a href="read.html">Read</a></li>
-            <li><a href="write.html">Write</a></li>
+            <li ><a class="active" href="write.html">Write</a></li>
             <li><a href="profile.html">Your Account</a></li>
         </ul>
     </nav>
+    <div class="alert-overlay" id="customAlert">
+        <div class="alert-box">
+          <h2 id="alertTitle">Alert</h2>
+          <p id="alertMessage">This is a message.</p>
+          <button onclick="closeAlert()">OK</button>
+        </div>
+      </div>
     <div id="write-story-section">
         <h2 id="page-title">Write a Story</h2>
         <form id="story-form">
+
             <input type="text" id="story-title" placeholder="Story Title" required>
             <input type="text" id="story-description" placeholder="description">
                 
@@ -79,7 +87,7 @@
     </select>
             <textarea id="story-content" placeholder="Write your story here..." rows="10" required></textarea>
             <div class="btns">
-            <button type="button" onclick="submitStory()">Publish Story</button>
+            <button type="button" onclick="submitStory()" id="submit">Publish Story</button>
             <button type="button" onclick="generateStory() ">generate Story</button></div>
         </form>
     </div>
@@ -163,7 +171,8 @@
                 window.location.href = "read.html"; // Redirect to the read page after submission
             } catch (error) {
                 console.error("Error submitting story:", error);
-                alert("Failed to submit story. Please try again.");
+                // alert("Failed to submit story. Please try again.");
+                showAlert('Error','Failed to submit story. Please try again.')
             }
            content.value="";
         }
