@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mimispot-Login and Register</title>
+    <title>MIMI BOOk-Login and Register</title>
     <link rel="stylesheet" href="style.css">
+    <script src="app.js"></script>
     <style>
       
 body{
@@ -135,6 +136,13 @@ body{
     </style>
 </head>
 <body>
+    <div class="alert-overlay" id="customAlert">
+        <div class="alert-box">
+          <h2 id="alertTitle">Alert</h2>
+          <p id="alertMessage">This is a message.</p>
+          <button onclick="closeAlert()">OK</button>
+        </div>
+      </div>
     <div class="side-img">
 
     </div>
@@ -206,7 +214,8 @@ body{
             const password = document.getElementById("register-password").value;
             const username = document.getElementById("register-username").value;
             const penName = document.getElementById("register-penname").value;
-
+            if(email&& password&&username&&penName !=empty)
+{
             auth.createUserWithEmailAndPassword(email, password)
                 .then(cred => {
                     return db.collection("users").doc(cred.user.uid).set({
@@ -224,6 +233,10 @@ body{
                     alert("username already exist")
                 });
         }
+        else{
+            showAlert("Error","Please fill all fields")
+        }
+    }
 
         // Login user
         function loginUser() {
@@ -232,11 +245,11 @@ body{
 
     auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-            window.location.href = "profile.html";
+            window.location.href = "index.html";
         })
         .catch(error => {
             console.log("Error: " + error.message); 
-            alert("Invalid username or password");  
+            showAlert("Error","Invalid username or password");  
         });
 }
 

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Home Page - Stories</title>
+  <title>MIMI BOOk - Home</title>
    <link rel="stylesheet" href="style.css">
    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
@@ -147,13 +147,7 @@ padding: 0 10px;
       </ul>
     </nav>
   </header>
-  <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #ccaa8285; position: fixed; width: 100%; top: 0; z-index: 10;">
-    <div class="loader">
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
-  </div>
+  
   <div class="alert-overlay" id="customAlert">
     <div class="alert-box">
       <h2 id="alertTitle">Alert</h2>
@@ -174,9 +168,16 @@ padding: 0 10px;
       <img src="assets/background.png" alt="">
     </div>
   </div>
-  
+  <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #ccaa8285;  width: 100%;  z-index: 10;">
+    <div class="loader">
+      <div></div>
+      <div></div>
+      <div></div>
+    </div>
+  </div>
   
   <div class="story-container" id="story-container">
+   
     <!-- Story cards will be dynamically added here -->
  
   </div>
@@ -198,18 +199,21 @@ padding: 0 10px;
     const auth = firebase.auth();
 
     // Function to display stories
-    async function loadStories() {
+
+async function loadStories() {
     showLoader();
     const storiesSnapshot = await db.collection("stories").get();
     const storyContainer = document.getElementById("story-container");
 
     storyContainer.innerHTML = ""; // Clear previous stories
 
+    const user = firebase.auth().currentUser; // Check user authentication status
+    const userId = user ? user.uid : null;
+
     storiesSnapshot.forEach(doc => {
         const story = doc.data();
         const storyId = doc.id;
-        const userId = firebase.auth().currentUser.uid;
-        const isLiked = story.likes && story.likes[userId];
+        const isLiked = user && story.likes && story.likes[userId];
 
         const storyCard = document.createElement("div");
         storyCard.classList.add("story-card");
@@ -234,7 +238,6 @@ padding: 0 10px;
     });
     hideLoader();
 }
-
 
    
 

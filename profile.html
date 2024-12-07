@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
+    <title>MIMI BOOk -Profile</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -29,7 +29,7 @@
             loadUserProfile(user.uid);
             loadUserStories(user.uid);
 
-            setTimeout(hideLoader, 3000);
+   hideLoader();
         } else {
             window.location.href = "user.html";
         }
@@ -71,13 +71,7 @@
     </style>
 </head>
 <body>
-    <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #ccaa8285; position: fixed; width: 100%; top: 0; z-index: 10;">
-        <div class="loader">
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
-      </div>
+  
       <div class="alert-overlay" id="customAlert">
         <div class="alert-box">
           <h2 id="alertTitle">Alert</h2>
@@ -88,7 +82,7 @@
     <div class="profile-page">
         <aside class="sidebar">
             <div class="profile-img-container">
-                <img id="profile-img" src="" alt="Profile Image" class="rounded-profile">
+                <img id="profile-img" src=""  style="border-radius: 50%;" alt="Profile Image" class="rounded-profile"  >
             
         
             </div>
@@ -111,7 +105,13 @@
             </nav>
             <h2 class="pro">My Stories</h2>
             <div class="story-container">
-                <!-- <p id="no-stories-message">You have not written a story yet. <a href="write.html">write your first story</a></p> -->
+                <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 50vh;   width: 80vw;  z-index: 10;">
+                    <div class="loader">
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
             </div>
         </section>
     </div>

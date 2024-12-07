@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Write a Story</title>
+    <title>MIMI BOOk - Write</title>
     <link rel="stylesheet" href="style.css">
 
     <style>
@@ -88,7 +88,7 @@
             <textarea id="story-content" placeholder="Write your story here..." rows="10" required></textarea>
             <div class="btns">
             <button type="button" onclick="submitStory()" id="submit">Publish Story</button>
-            <button type="button" onclick="generateStory() ">generate Story</button></div>
+            <button type="button" onclick="generateStory() " id="generate">generate Story</button></div>
         </form>
     </div>
 
@@ -144,40 +144,55 @@
             }
         });
 
-        async function submitStory() {
-            const title = document.getElementById("story-title").value;
-            const description = document.getElementById("story-description").value;
-            const genre = document.getElementById("story-genre").value;
-            const content = document.getElementById("story-content").value;
-            const userId = auth.currentUser.uid;
+   
+    
+    async function submitStory() {
+    const title = document.getElementById("story-title").value;
+    const description = document.getElementById("story-description").value;
+    const genre = document.getElementById("story-genre").value;
+    const content = document.getElementById("story-content").value;
+    const userId = auth.currentUser.uid;
+    const submitButton = document.getElementById("submit"); // Assuming this is the button's id
+    
+    // Validate if all fields are filled
+    if (!title || !description || !genre || !content) {
+        showAlert("Failed to Submit", "Please fill all fields");
+        return; // Stop further execution if validation fails
+    }
 
-            try {
-                const userDoc = await db.collection("users").doc(userId).get();
-                if (!userDoc.exists) {
-                    throw new Error("User profile not found.");
-                }
-                const { username, penName } = userDoc.data();
-                const coverImageUrl = `https://image.pollinations.ai/prompt/${title}`;
+    // Disable the submit button and show loading indicator
+    submitButton.disabled = true;
+    submitButton.innerHTML = `<div class="spinner-div"> <span class="spinner"></span></div>`
 
-                if (storyId) {
-                    await updateStory(storyId, title,description,genre, content, coverImageUrl);
-                    alert("Story updated successfully!");
-                } else {
-                    await saveStory(userId, username, penName, title,description,genre, content, coverImageUrl);
-                    alert("Story submitted successfully!");
-                }
+    try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (!userDoc.exists) {
+            throw new Error("User profile not found.");
+        }
+        const { username, penName, profileImageUrl } = userDoc.data();
+        const coverImageUrl = `https://image.pollinations.ai/prompt/${title}`;
 
-                document.getElementById("story-form").reset();
-                window.location.href = "read.html"; // Redirect to the read page after submission
-            } catch (error) {
-                console.error("Error submitting story:", error);
-                // alert("Failed to submit story. Please try again.");
-                showAlert('Error','Failed to submit story. Please try again.')
-            }
-           content.value="";
+        if (storyId) {
+            await updateStory(storyId, title, description, genre, content, coverImageUrl);
+            showAlert("Updated", "Story updated successfully!");
+        } else {
+            await saveStory(userId, username, penName, title, description, genre, content, coverImageUrl, profileImageUrl);
+            showAlert("Submitted", "Story published successfully!");
         }
 
-        function saveStory(userId, username, penName, title,description,genre, content, coverImageUrl) {
+        document.getElementById("story-form").reset();
+        // window.location.href = "read.html"; // Redirect to the read page after submission
+    } catch (error) {
+        console.error("Error submitting story:", error);
+        showAlert("Error", "Failed to submit story. Please try again.");
+    } finally {
+        // Restore the submit button after submission attempt
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Submit'; // Restore original button text
+    }
+}
+
+        function saveStory(userId, username, penName, title,description,genre, content, coverImageUrl,profileImageUrl) {
             return db.collection("stories").add({
                 userId: userId,
                 username: username,
@@ -187,6 +202,7 @@
                 genre: genre,
                 content: content,
                 coverImageUrl: coverImageUrl,
+                userImageUrl:profileImageUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
         }

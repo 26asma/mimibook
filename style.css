@@ -288,10 +288,16 @@ nav {
     color: #cca66d;
    
 }
+.pro h4{
+    width: 50%;
+}
 
 .pro p{
     padding: 10px;
     font-weight: 900;
+}
+.story-card .pro {
+    height: 70px;
 }
 .alert-overlay {
     position: fixed;
@@ -357,3 +363,34 @@ nav {
     color: #ccaa82; 
 }
 
+.author-img img{
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #c1a27d;
+    margin: 10px;
+}
+.author{
+    display: flex
+    ;
+        align-items: center;
+}
+.spinner {
+    border: 2px solid #f3f3f3; /* Light gray background */
+    border-top: 2px solid #ccaa82; /* Blue color for the spinner */
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+.spinner-div{
+    width: 100%;
+    display: flex
+;
+    justify-content: center;
+}

@@ -1,16 +1,22 @@
+
 function loadUserProfile(uid) {
     const userRef = db.collection("users").doc(uid);
-    userRef.get().then(doc => {
-        if (doc.exists) {
-            const userData = doc.data();
-            profileimg=document.getElementById("profile-img")
-            profileimg.src=userData.profileImageUrl;
-            document.getElementById("username").textContent = userData.username;
-            document.getElementById("pen-name").textContent = userData.penName;
-          
-        }
-      
-    });
+    userRef.get()
+        .then(doc => {
+            if (doc.exists) {
+                const userData = doc.data();
+                const profileImg = document.getElementById("profile-img");
+                profileImg.src = userData.profileImageUrl;
+                document.getElementById("username").textContent = userData.username;
+                document.getElementById("pen-name").textContent = userData.penName;
+            } else {
+                console.log("No user profile found for the given UID.");
+            }
+        })
+        .catch(error => {
+            console.error("Error loading user profile:", error);
+            showAlert('Error', 'Check your connection and try again.');
+        });
 }
 
 
@@ -61,9 +67,14 @@ function loadUserStories() {
 
 
 // Like a story
-
 async function likeStory(storyId, event) {
-    const userId = firebase.auth().currentUser.uid;
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        showAlert("LOG-IN","Please log in to like this story.");
+        return;
+    }
+
+    const userId = user.uid;
     const heartIcon = event.target;
 
     try {
@@ -72,19 +83,20 @@ async function likeStory(storyId, event) {
         let likes = storyDoc.data().likes || {};
 
         if (likes[userId]) {
-            delete likes[userId]; // Unlike if already liked
-            heartIcon.classList.remove("liked"); // Change heart color to white
+            delete likes[userId]; 
+            heartIcon.classList.remove("liked"); 
         } else {
-            likes[userId] = true; // Like the story
-            heartIcon.classList.add("liked"); // Change heart color to red
+            likes[userId] = true; 
+            heartIcon.classList.add("liked"); 
         }
 
         await storyRef.update({ likes });
-        heartIcon.nextElementSibling.textContent = Object.keys(likes).length; // Update like count
+        heartIcon.nextElementSibling.textContent = Object.keys(likes).length; 
     } catch (error) {
         console.error("Error updating likes:", error);
     }
 }
+
 // Toggle comments section visibility
 function toggleComments(storyId) {
     const commentSection = document.getElementById(`comment-section-${storyId}`);
@@ -103,7 +115,7 @@ function toggleComments(storyId) {
 // Load comments for a story
 async function loadComments(storyId) {
     const commentsList = document.getElementById(`comments-list-${storyId}`);
-    commentsList.innerHTML = "Loading comments...";
+    commentsList.innerHTML = `  <div class="spinner-div"> <span class="spinner"></span></div> `;
 
     try {
         const commentsSnapshot = await db
@@ -254,20 +266,28 @@ let submit=document.getElementById('submit');
 submit.style.display="none";
 }
 
+async function deleteStory(storyId) {
+    try {
+        // Wait for the user's confirmation response
+        const isConfirmed = await showConfirm('Are you sure you want to delete this story?');
 
-    function deleteStory(storyId) {
-        // if (confirm("Are you sure you want to delete this story?")) {
-        if(showAlert('Are you sure you want to Delete','once deleted story can not be retrive again')){
-            db.collection("stories").doc(storyId).delete()
-                .then(() => {
-                    showAlert("status","Story deleted successfully")
-                    loadUserStories();
-                })
-                .catch(error => {
-                    console.error("Error deleting story:", error);
-                });
+        if (isConfirmed) {
+            // Proceed with deletion if the user confirmed
+            await db.collection("stories").doc(storyId).delete();
+            showAlert("Status", "Story deleted successfully");
+            loadUserStories(); // Reload the user's stories after deletion
+        } else {
+            // If the user canceled, log or handle accordingly
+            console.log("Story deletion was canceled.");
         }
+    } catch (error) {
+        // Handle any errors that occur during the deletion process
+        console.error("Error deleting story:", error);
+        showAlert("Error", "Failed to delete the story. Please try again.");
     }
+}
+
+
 
    
 
@@ -285,51 +305,57 @@ submit.style.display="none";
       }
       
       
-      async function generateStory(genre, description) {
+ 
+    async function generateStory(genre, description) {
         const url = 'https://open-ai21.p.rapidapi.com/chatgpt';
         const options = {
-          method: 'POST',
-          headers: {
-            'x-rapidapi-key': storygeneratekey, 
-            'x-rapidapi-host': 'open-ai21.p.rapidapi.com',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                role: 'user',
-                content: `Write a small ${genre} story. Here is the description: ${description}`,
-              },
-            ],
-            web_access: false,
-          }),
+            method: 'POST',
+            headers: {
+                'x-rapidapi-key': storygeneratekey, 
+                'x-rapidapi-host': 'open-ai21.p.rapidapi.com',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                messages: [
+                    {
+                        role: 'user',
+                        content: `Write a small ${genre} story. Here is the description: ${description}`,
+                    },
+                ],
+                web_access: false,
+            }),
         };
-      
+    
+        const generateButton = document.getElementById("generate"); 
+    
+        // Disable the button and show the spinner
+        generateButton.disabled = true;
+        generateButton.innerHTML = `
+            <div class="spinner-div"> <span class="spinner"></span></div>
+        `;
+    
         try {
-          const response = await fetch(url, options);
-          if (!response.ok) {
-              showAlert("Error","Failed to generate!try again later.");
-            throw new Error(`Failed to generate story: ${response.status}`);
-          }
-          const result = await response.json();
-          console.log(result);
-          let story=document.getElementById('story-content');
-        
-          story.textContent=result.result;
-          return result.result;
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                showAlert("Error", "Failed to generate! Try again later.");
+                throw new Error(`Failed to generate story: ${response.status}`);
+            }
+            const result = await response.json();
+            console.log(result);
+            let story = document.getElementById('story-content');
+            story.textContent = result.result;
+    
+            return result.result;
         } catch (error) {
             console.error('Error:', error.message);
-            showAlert("Error","can not Generate right now!try again later.")
+            showAlert("Error", "Cannot generate right now! Try again later.");
+        } finally {
+           
+            generateButton.disabled = false;
+            generateButton.innerHTML = 'Generate Story';
         }
     }
-      
-    function refreshPage() {
-        
-        sessionStorage.setItem('scrollPosition', window.scrollY);
     
-       
-        location.reload();
-    }
     
     
     window.addEventListener('load', () => {
@@ -363,3 +389,75 @@ submit.style.display="none";
     // Hide the alert box
     document.getElementById('customAlert').style.display = 'none';
   }
+ 
+function showConfirm(message) {
+    // Create the confirm box
+    const confirmBox = document.createElement('div');
+    confirmBox.style.position = 'fixed';
+    confirmBox.style.top = '0';
+    confirmBox.style.left = '0';
+    confirmBox.style.width = '100%';
+    confirmBox.style.height = '100%';
+    confirmBox.style.display = 'flex';
+    confirmBox.style.alignItems = 'center';
+    confirmBox.style.justifyContent = 'center';
+    confirmBox.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    confirmBox.style.zIndex = '1000';
+
+    // Inner content
+    confirmBox.innerHTML = `
+        <div style="
+            background-color: #343A40; 
+            color: #ccaa82; 
+            padding: 20px; 
+            border-radius: 10px; 
+            text-align: center; 
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        ">
+            <p>${message}</p>
+            <div style="margin-top: 20px; display: flex; justify-content: space-around;">
+                <button style="
+                    background-color: #ccaa82; 
+                    color: #343A40; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 5px; 
+                    font-weight: bold;
+                    cursor: pointer;
+                ">Yes</button>
+                <button style="
+                    background-color: #ccaa82; 
+                    color: #343A40; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 5px; 
+                    font-weight: bold;
+                    cursor: pointer;
+                ">No</button>
+            </div>
+        </div>
+    `;
+
+    // Add to the body
+    document.body.appendChild(confirmBox);
+
+    return new Promise((resolve) => {
+        confirmBox.querySelector('button:nth-child(1)').onclick = () => {
+            document.body.removeChild(confirmBox);
+            resolve(true); 
+        };
+
+        confirmBox.querySelector('button:nth-child(2)').onclick = () => {
+            document.body.removeChild(confirmBox);
+            resolve(false); 
+        };
+    });
+}
+
+
+
+
+
+
+
+

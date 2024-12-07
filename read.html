@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Read Stories</title>
+    <title>MIMI BOOk - Read</title>
     <link rel="stylesheet" href="style.css">
 
     <style>
-
         h2 {
             text-align: center;
             font-size: 32px;
@@ -32,45 +31,39 @@
             background: transparent;
             font-size: 16px;
             border: none;
-            color:#ccaa82;
+            color: #ccaa82;
         }
-    
-      
+
+
         .search-bar button {
             background: transparent;
             color: #ccaa82;
         }
-.filter-container{
-    display: flex;
-    justify-content: flex-end;
-    padding: 15px;
-    gap: 15px;
-    color:#ccaa82;
-    font-size: 18px;
-    font-weight: 500;
-    background-color: #343a40;
-}
-.filter-container select{
-border: 1px solid #343a40 ;
-background: transparent;
-border: 1px solid #ccaa82;
-}
-.info div{
-    display: flex
-;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-  }
-  .info{
-    display: flex
-;
-    align-items: center;
-    justify-content: space-between;
-    flex-direction: column;
-      
-  }
-    
+
+        .filter-container {
+            display: flex;
+            justify-content: flex-end;
+            padding: 15px;
+            gap: 15px;
+            color: #ccaa82;
+            font-size: 18px;
+            font-weight: 500;
+            background-color: #343a40;
+        }
+
+        .filter-container select {
+            border: 1px solid #343a40;
+            background: transparent;
+            border: 1px solid #ccaa82;
+        }
+
+        .info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-direction: column;
+
+        }
     </style>
 </head>
 
@@ -90,8 +83,8 @@ border: 1px solid #ccaa82;
         <!-- Navigation Links -->
         <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
-            <li><a href="read.html">Read</a></li>
-            <li><a class="active" href="write.html">Write</a></li>
+            <li><a class="active" href="read.html">Read</a></li>
+            <li><a href="write.html">Write</a></li>
             <li><a href="profile.html">Your Account</a></li>
         </ul>
     </nav>
@@ -101,16 +94,22 @@ border: 1px solid #ccaa82;
         <select id="genre-filter" onchange="filterStories()">
             <option value="all">All</option>
             <option value="Adventure">Adventure</option>
-        <option value="Romance">Romance</option>
-        <option value="Fantasy">Fantasy</option>
-        <option value="Science Fiction">Science Fiction</option>
-        <option value="Mystery">Mystery</option>
-        <option value="Horror">Horror</option>
-        <option value="Thriller">Thriller</option>
+            <option value="Romance">Romance</option>
+            <option value="Fantasy">Fantasy</option>
+            <option value="Science Fiction">Science Fiction</option>
+            <option value="Mystery">Mystery</option>
+            <option value="Horror">Horror</option>
+            <option value="Thriller">Thriller</option>
         </select>
     </div>
-    
 
+    <div class="alert-overlay" id="customAlert">
+        <div class="alert-box">
+            <h2 id="alertTitle">Alert</h2>
+            <p id="alertMessage">This is a message.</p>
+            <button onclick="closeAlert()">OK</button>
+        </div>
+    </div>
     <div class="container">
 
 
@@ -147,7 +146,7 @@ border: 1px solid #ccaa82;
                 displayStories(allStories); // Display all stories
             } catch (error) {
                 console.error("Error fetching stories:", error);
-                
+
             }
         }
 
@@ -158,12 +157,13 @@ border: 1px solid #ccaa82;
             stories.forEach(story => {
                 const storyCard = document.createElement('div');
                 storyCard.classList.add('story-card');
-                storyCard.innerHTML = `
+                storyCard.innerHTML = `<div class="author"><div class="author-img"><img src="${story.userImageUrl}" alt="Author Image" onclick="openStory('${story.id}')"></div>
+                <div class="story-author"> ${story.username}</div></div>
                     <img src="${story.coverImageUrl}" alt="Cover Image" onclick="openStory('${story.id}')">
                     <div class="info">
-                        <div>
+                        
                         <div class="story-title">${story.title}</div>
-                        <div class="story-author">By ${story.username}</div></div>
+                        
                         <div class="description">${story.description ? story.description : story.content.substring(0, 150)}...</div>
                         <button class="read-button" onclick="openStory('${story.id}')">Read Story</button>
                     </div>
@@ -183,7 +183,7 @@ border: 1px solid #ccaa82;
             }
         }
 
-   
+
 
         // Load stories on page load
         window.onload = loadStories;
