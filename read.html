@@ -64,6 +64,39 @@
             flex-direction: column;
 
         }
+        .description{
+            padding: 10px;
+           
+        }
+        .story-card{
+            height: 500px;
+        }
+        .story-card .author{
+height: 15%;
+        }
+        .story-card img{
+            height: 50%;
+        }
+        .story-card .info{
+            height: 30%;
+    display: flex
+;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    /* padding: 10px 0; */
+}
+.description {
+    padding: 10px;
+    height: 70%;
+    display: flex
+;
+    justify-content: center;
+    align-items: center;
+}  
+        .read-button{
+         border-bottom: 1px solid #ccaa82;
+        }
     </style>
 </head>
 
@@ -164,7 +197,7 @@
                         
                         <div class="story-title">${story.title}</div>
                         
-                        <div class="description">${story.description ? story.description : story.content.substring(0, 150)}...</div>
+                        <div class="description">${story.description}</div>
                         <button class="read-button" onclick="openStory('${story.id}')">Read Story</button>
                     </div>
                 `;

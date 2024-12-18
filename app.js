@@ -53,7 +53,7 @@ function loadUserStories() {
                         <button onclick="deleteStory('${doc.id}')"><i class="fas fa-trash-alt"></i></button></div>
                     </div>
                     ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
-                    <p class="pro">Published on: ${displayDate}</p> <!-- Display the formatted date -->
+                    <h4 class="pro">Published on ${displayDate}</h4> <!-- Display the formatted date -->
                 `;
 
                 storyList.appendChild(storyItem);
@@ -61,7 +61,7 @@ function loadUserStories() {
         })
         .catch(error => {
             console.error("Error loading stories:", error);
-            showAlert('Error','check your connection and try again')
+            showAlert('Error', 'check your connection and try again')
         });
 }
 
@@ -70,7 +70,7 @@ function loadUserStories() {
 async function likeStory(storyId, event) {
     const user = firebase.auth().currentUser;
     if (!user) {
-        showAlert("LOG-IN","Please log in to like this story.");
+        showAlert("LOG-IN", "Please log in to like this story.");
         return;
     }
 
@@ -83,15 +83,15 @@ async function likeStory(storyId, event) {
         let likes = storyDoc.data().likes || {};
 
         if (likes[userId]) {
-            delete likes[userId]; 
-            heartIcon.classList.remove("liked"); 
+            delete likes[userId];
+            heartIcon.classList.remove("liked");
         } else {
-            likes[userId] = true; 
-            heartIcon.classList.add("liked"); 
+            likes[userId] = true;
+            heartIcon.classList.add("liked");
         }
 
         await storyRef.update({ likes });
-        heartIcon.nextElementSibling.textContent = Object.keys(likes).length; 
+        heartIcon.nextElementSibling.textContent = Object.keys(likes).length;
     } catch (error) {
         console.error("Error updating likes:", error);
     }
@@ -125,11 +125,11 @@ async function loadComments(storyId) {
             .orderBy("createdAt", "asc")
             .get();
 
-        commentsList.innerHTML = ""; 
+        commentsList.innerHTML = "";
         commentsSnapshot.forEach((doc) => {
             const comment = doc.data();
             const commentElement = document.createElement("div");
-            commentElement.innerHTML = `<div class="com"><div class="commenter">${comment.username}</div><div class="comment-content"> ${comment.text}</div></div><hr>`;
+            commentElement.innerHTML = `<div class="com"><div class="userimg">img src="${comment.profileImgUrl}"</div><div class="commenter">${comment.username}</div><div class="comment-content"> ${comment.text}</div></div><hr>`;
             commentsList.appendChild(commentElement);
         });
     } catch (error) {
@@ -144,11 +144,12 @@ async function addComment(storyId) {
     const text = commentInput.value.trim();
     const userId = firebase.auth().currentUser.uid;
 
-    if (!text) return showAlert("Error","Comment cannot be empty!");
+    if (!text) return showAlert("Error", "Comment cannot be empty!");
 
     try {
         const userDoc = await db.collection("users").doc(userId).get();
         const username = userDoc.data().username;
+        const profileImageUrl=userDoc.data().profileImageUrl;
 
         await db
             .collection("stories")
@@ -157,81 +158,94 @@ async function addComment(storyId) {
             .add({
                 username,
                 text,
+                profileImageUrl,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
 
-        commentInput.value = ""; 
-        loadComments(storyId); 
+        commentInput.value = "";
+        loadComments(storyId);
     } catch (error) {
         console.error("Error adding comment:", error);
-        showAlert("Error","Error adding comment!try again.");
+        showAlert("Error", "Error adding comment!try again.");
     }
 }
 
 
 
 
-    // Text-to-Speech API Configuration
-    const API_URL = "https://api-inference.huggingface.co/models/espnet/kan-bayashi_ljspeech_vits";
-    const API_TOKEN = textspeechkey; 
+// Text-to-Speech API Configuration
+const API_URL = "https://api-inference.huggingface.co/models/espnet/kan-bayashi_ljspeech_vits";
+const API_TOKEN = textspeechkey;
 
-    // Function to read the story aloud
-    async function readStory(storyId) {
-        const audioPlayer = document.getElementById("audio-player");
+// Function to read the story aloud
+async function readStory(storyId) {
+    const audioPlayer = document.getElementById("audio-player");
+    const generateButton = document.getElementById("generate");
 
-        try {
-            // Fetch story details from Firebase
-            const storyDoc = await db.collection("stories").doc(storyId).get();
-            if (!storyDoc.exists) {
-                showAlert("Error","Story not found.");
-                return;
-            }
-            const story = storyDoc.data();
-            const textToRead = `${story.title}. ${story.content}`.slice(0, 500); 
+    // Disable the button and show the spinner
+    generateButton.disabled = true;
+    generateButton.innerHTML = `
+            <div class="spinner-div"> <span class="spinner"></span></div>
+        `;
 
-            // Send text to Hugging Face API
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${API_TOKEN}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ inputs: textToRead }),
-            });
-
-            if (!response.ok) throw new Error("Failed to generate speech. Check your API key or model.");
-
-            // Generate and play audio
-            const audioBlob = await response.blob();
-            const audioURL = URL.createObjectURL(audioBlob);
-            audioPlayer.src = audioURL;
-            audioPlayer.style.display = "block"; // Show audio player
-            audioPlayer.play();
-        } catch (error) {
-            console.error("Error generating speech:", error);
-            showAlert("Error","Try again later.")
+    try {
+        // Fetch story details from Firebase
+        const storyDoc = await db.collection("stories").doc(storyId).get();
+        if (!storyDoc.exists) {
+            showAlert("Error", "Story not found.");
+            return;
         }
+        const story = storyDoc.data();
+        const textToRead = `${story.title}. ${story.content}`.slice(0, 500);
+
+        // Send text to Hugging Face API
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${API_TOKEN}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ inputs: textToRead }),
+        });
+
+        if (!response.ok) throw new Error("Failed to generate speech. Check your API key or model.");
+
+        // Generate and play audio
+        const audioBlob = await response.blob();
+        const audioURL = URL.createObjectURL(audioBlob);
+        audioPlayer.src = audioURL;
+        audioPlayer.style.display = "block"; // Show audio player
+        audioPlayer.play();
+    } catch (error) {
+        console.error("Error generating speech:", error);
+        showAlert("Error", "Try again later.")
     }
+   finally {
+
+        generateButton.disabled = false;
+        generateButton.innerHTML = 'listen<i class="fa fa-volume-up"></i>';
+    }
+}
 
 
-    // Function to search stories by title or username
-    async function searchStories() {
-        const searchQuery = document.getElementById('search-input').value.toLowerCase();
-        try {
-            const storiesSnapshot = await db.collection('stories')
-          
-                .where("title", ">=", searchQuery)
-                .where("title", "<=", searchQuery + "\uf8ff")  // To get results for partial matching
-                .get();
+// Function to search stories by title or username
+async function searchStories() {
+    const searchQuery = document.getElementById('search-input').value.toLowerCase();
+    try {
+        const storiesSnapshot = await db.collection('stories')
 
-            const storiesContainer = document.getElementById('story-cards-container');
-            storiesContainer.innerHTML = ''; // Clear previous results
+            .where("title", ">=", searchQuery)
+            .where("title", "<=", searchQuery + "\uf8ff")  // To get results for partial matching
+            .get();
 
-            storiesSnapshot.forEach(doc => {
-                const story = doc.data();
-                const storyCard = document.createElement('div');
-                storyCard.classList.add('story-card');
-                storyCard.innerHTML = `
+        const storiesContainer = document.getElementById('story-cards-container');
+        storiesContainer.innerHTML = ''; // Clear previous results
+
+        storiesSnapshot.forEach(doc => {
+            const story = doc.data();
+            const storyCard = document.createElement('div');
+            storyCard.classList.add('story-card');
+            storyCard.innerHTML = `
                     <img src="${story.coverImageUrl}" alt="Cover Image">
                     <div class="content">
                         <div class="title">${story.title}</div>
@@ -240,30 +254,30 @@ async function addComment(storyId) {
                         <button class="read-button" onclick="redirectToStory('${doc.id}')">Read Story</button>
                     </div>
                 `;
-                storiesContainer.appendChild(storyCard);
-            });
+            storiesContainer.appendChild(storyCard);
+        });
 
-            if (storiesSnapshot.empty) {
-                const noResultsMessage = document.createElement('div');
-                noResultsMessage.textContent = 'No stories found.';
-                storiesContainer.appendChild(noResultsMessage);
-            }
-
-        } catch (error) {
-            console.error("Error searching stories:", error);
+        if (storiesSnapshot.empty) {
+            const noResultsMessage = document.createElement('div');
+            noResultsMessage.textContent = 'No stories found.';
+            storiesContainer.appendChild(noResultsMessage);
         }
+
+    } catch (error) {
+        console.error("Error searching stories:", error);
     }
+}
 
 
-    function viewStory(storyId) {
-        window.location.href = `story.html?id=${storyId}`;
-    }
+function viewStory(storyId) {
+    window.location.href = `story.html?id=${storyId}`;
+}
 
-    function editStory(storyId) {
-// Redirect to write.html with the story ID as a URL parameter
-window.location.href = `write.html?storyId=${storyId}`;
-let submit=document.getElementById('submit');
-submit.style.display="none";
+function editStory(storyId) {
+    // Redirect to write.html with the story ID as a URL parameter
+    window.location.href = `write.html?storyId=${storyId}`;
+    let submit = document.getElementById('submit');
+    submit.style.display = "none";
 }
 
 async function deleteStory(storyId) {
@@ -289,107 +303,107 @@ async function deleteStory(storyId) {
 
 
 
-   
 
-    function logoutUser() {
-        auth.signOut().then(() => {
-            window.location.href = "index.html";
-        }).catch(error => {
-            console.error("Error logging out:", error);
-            showAlert("Error","Error logging out. Please try again.");
-        });
-    }
 
-    function openStory(storyId) {
-        window.location.href = `story.html?id=${storyId}`;
-      }
-      
-      
- 
-    async function generateStory(genre, description) {
-        const url = 'https://open-ai21.p.rapidapi.com/chatgpt';
-        const options = {
-            method: 'POST',
-            headers: {
-                'x-rapidapi-key': storygeneratekey, 
-                'x-rapidapi-host': 'open-ai21.p.rapidapi.com',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messages: [
-                    {
-                        role: 'user',
-                        content: `Write a small ${genre} story. Here is the description: ${description}`,
-                    },
-                ],
-                web_access: false,
-            }),
-        };
-    
-        const generateButton = document.getElementById("generate"); 
-    
-        // Disable the button and show the spinner
-        generateButton.disabled = true;
-        generateButton.innerHTML = `
+function logoutUser() {
+    auth.signOut().then(() => {
+        window.location.href = "index.html";
+    }).catch(error => {
+        console.error("Error logging out:", error);
+        showAlert("Error", "Error logging out. Please try again.");
+    });
+}
+
+function openStory(storyId) {
+    window.location.href = `story.html?id=${storyId}`;
+}
+
+
+
+async function generateStory(genre, description) {
+    const url = 'https://open-ai21.p.rapidapi.com/chatgpt';
+    const options = {
+        method: 'POST',
+        headers: {
+            'x-rapidapi-key': storygeneratekey,
+            'x-rapidapi-host': 'open-ai21.p.rapidapi.com',
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            messages: [
+                {
+                    role: 'user',
+                    content: `Write a small ${genre} story. Here is the description: ${description}`,
+                },
+            ],
+            web_access: false,
+        }),
+    };
+
+    const generateButton = document.getElementById("generate");
+
+    // Disable the button and show the spinner
+    generateButton.disabled = true;
+    generateButton.innerHTML = `
             <div class="spinner-div"> <span class="spinner"></span></div>
         `;
-    
-        try {
-            const response = await fetch(url, options);
-            if (!response.ok) {
-                showAlert("Error", "Failed to generate! Try again later.");
-                throw new Error(`Failed to generate story: ${response.status}`);
-            }
-            const result = await response.json();
-            console.log(result);
-            let story = document.getElementById('story-content');
-            story.textContent = result.result;
-    
-            return result.result;
-        } catch (error) {
-            console.error('Error:', error.message);
-            showAlert("Error", "Cannot generate right now! Try again later.");
-        } finally {
-           
-            generateButton.disabled = false;
-            generateButton.innerHTML = 'Generate Story';
-        }
-    }
-    
-    
-    
-    window.addEventListener('load', () => {
-        const savedPosition = sessionStorage.getItem('scrollPosition');
-        if (savedPosition !== null) {
-            window.scrollTo(0, parseInt(savedPosition)); 
-            sessionStorage.removeItem('scrollPosition'); 
-        }
-    });
-    
-    // Function to display loader
-  function showLoader() {
-    document.getElementById("loader").style.display = "flex";
-  }
 
-  // Function to hide loader
-  function hideLoader() {
+    try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            showAlert("Error", "Failed to generate! Try again later.");
+            throw new Error(`Failed to generate story: ${response.status}`);
+        }
+        const result = await response.json();
+        console.log(result);
+        let story = document.getElementById('story-content');
+        story.textContent = result.result;
+
+        return result.result;
+    } catch (error) {
+        console.error('Error:', error.message);
+        showAlert("Error", "Cannot generate right now! Try again later.");
+    } finally {
+
+        generateButton.disabled = false;
+        generateButton.innerHTML = 'Generate Story';
+    }
+}
+
+
+
+window.addEventListener('load', () => {
+    const savedPosition = sessionStorage.getItem('scrollPosition');
+    if (savedPosition !== null) {
+        window.scrollTo(0, parseInt(savedPosition));
+        sessionStorage.removeItem('scrollPosition');
+    }
+});
+
+// Function to display loader
+function showLoader() {
+    document.getElementById("loader").style.display = "flex";
+}
+
+// Function to hide loader
+function hideLoader() {
     document.getElementById("loader").style.display = "none";
-  }
-      
-  function showAlert(title, message) {
+}
+
+function showAlert(title, message) {
     // Set the alert title and message
     document.getElementById('alertTitle').innerText = title;
     document.getElementById('alertMessage').innerText = message;
 
     // Show the alert box
     document.getElementById('customAlert').style.display = 'flex';
-  }
+}
 
-  function closeAlert() {
+function closeAlert() {
     // Hide the alert box
     document.getElementById('customAlert').style.display = 'none';
-  }
- 
+}
+
 function showConfirm(message) {
     // Create the confirm box
     const confirmBox = document.createElement('div');
@@ -444,15 +458,16 @@ function showConfirm(message) {
     return new Promise((resolve) => {
         confirmBox.querySelector('button:nth-child(1)').onclick = () => {
             document.body.removeChild(confirmBox);
-            resolve(true); 
+            resolve(true);
         };
 
         confirmBox.querySelector('button:nth-child(2)').onclick = () => {
             document.body.removeChild(confirmBox);
-            resolve(false); 
+            resolve(false);
         };
     });
 }
+
 
 
 

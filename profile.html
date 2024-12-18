@@ -24,12 +24,9 @@
     auth.onAuthStateChanged(user => {
         if (user) {
             showLoader();
-
-            
             loadUserProfile(user.uid);
             loadUserStories(user.uid);
-
-   hideLoader();
+            hideLoader();
         } else {
             window.location.href = "user.html";
         }

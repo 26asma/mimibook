@@ -21,7 +21,7 @@
   position: relative;
 
   overflow: hidden;
-  background-color:#ccaa8285;
+  background: linear-gradient(135deg, #fcf6ef, #e4d3be);
 }
 
 .home-content {
@@ -126,6 +126,11 @@
 .story-actions i{
 padding: 0 10px;
 }
+.card i{
+  color:#34495e;;
+  font-size: 30px;
+  padding: 10px;
+}
 </style>
 
 <body>
@@ -168,14 +173,38 @@ padding: 0 10px;
       <img src="assets/background.png" alt="">
     </div>
   </div>
+  <section id="features">
+    <h2>What You Can Do</h2>
+    <div class="card-container">
+      <div class="card">
+        <i class="fa-solid fa-book"></i>
+        <h3>Write Stories</h3>
+        <p>Share your creativity with the world by writing your own stories.</p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-book-open-reader"></i>
+        <h3>Read Stories</h3>
+        <p>Discover captivating tales written by other passionate storytellers.</p>
+      </div>
+      <div class="card">
+        <i class="fa fa-heart"></i>
+        <h3>Like and Comment </h3>
+        <p>Engage with the community by liking and commenting on stories.</p>
+      </div>
+      <div class="card">
+        <i class="fa-solid fa-globe"></i>
+        <h3>Build Connections</h3>
+        <p>Connect with other book lovers and exchange ideas.</p>
+      </div>
+    </div>
+  </section>
   <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #ccaa8285;  width: 100%;  z-index: 10;">
     <div class="loader">
       <div></div>
       <div></div>
       <div></div>
-    </div>
+    </div> 
   </div>
-  
   <div class="story-container" id="story-container">
    
     <!-- Story cards will be dynamically added here -->

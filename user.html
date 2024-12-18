@@ -133,6 +133,9 @@ body{
             width: 50vw;
             height: 100%;
         }
+        .pro p{
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -214,7 +217,7 @@ body{
             const password = document.getElementById("register-password").value;
             const username = document.getElementById("register-username").value;
             const penName = document.getElementById("register-penname").value;
-            if(email&& password&&username&&penName !=empty)
+            if(email&& password&&username&&penName !="")
 {
             auth.createUserWithEmailAndPassword(email, password)
                 .then(cred => {
