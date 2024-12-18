@@ -64,38 +64,43 @@
             flex-direction: column;
 
         }
-        .description{
+
+        .description {
             padding: 10px;
-           
+
         }
-        .story-card{
+
+        .story-card {
             height: 500px;
         }
-        .story-card .author{
-height: 15%;
+
+        .story-card .author {
+            height: 15%;
         }
-        .story-card img{
+
+        .story-card img {
             height: 50%;
         }
-        .story-card .info{
+
+        .story-card .info {
             height: 30%;
-    display: flex
-;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
-    /* padding: 10px 0; */
-}
-.description {
-    padding: 10px;
-    height: 70%;
-    display: flex
-;
-    justify-content: center;
-    align-items: center;
-}  
-        .read-button{
-         border-bottom: 1px solid #ccaa82;
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            justify-content: center;
+            /* padding: 10px 0; */
+        }
+
+        .description {
+            padding: 10px;
+            height: 70%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .read-button {
+            border-bottom: 1px solid #ccaa82;
         }
     </style>
 </head>
@@ -208,15 +213,16 @@ height: 15%;
         // Function to filter stories by genre
         function filterStories() {
             const genre = document.getElementById("genre-filter").value;
-            if (genre === "all") {
+            const filteredStories = allStories.filter(story => story.genre.toLowerCase() === genre.toLowerCase());
+            if (genre === "all" || filteredStories.length === 0) {
+                if (filteredStories.length === 0) {
+                    showAlert("No Stories found", "try diffrent genre")
+                }
                 displayStories(allStories); // Show all stories
             } else {
-                const filteredStories = allStories.filter(story => story.genre.toLowerCase() === genre.toLowerCase());
                 displayStories(filteredStories);
             }
         }
-
-
 
         // Load stories on page load
         window.onload = loadStories;
