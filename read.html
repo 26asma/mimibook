@@ -114,7 +114,7 @@
 
         <!-- Search Bar -->
         <div class="search-bar">
-            <input type="text" id="search-input" placeholder="Search by title ...">
+            <input type="text" id="search-input" placeholder="Search by title">
             <button onclick="searchStories()">Search</button>
         </div>
 
@@ -214,11 +214,13 @@
         function filterStories() {
             const genre = document.getElementById("genre-filter").value;
             const filteredStories = allStories.filter(story => story.genre.toLowerCase() === genre.toLowerCase());
-            if (genre === "all" || filteredStories.length === 0) {
-                if (filteredStories.length === 0) {
-                    showAlert("No Stories found", "try diffrent genre")
-                }
+            if (genre === "all") {
+                
                 displayStories(allStories); // Show all stories
+            }else if(filteredStories.length === 0){
+                
+                    showAlert("No Stories found", "try diffrent genre")
+                    displayStories(allStories); // Show all stories
             } else {
                 displayStories(filteredStories);
             }

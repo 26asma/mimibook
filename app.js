@@ -129,7 +129,11 @@ async function loadComments(storyId) {
         commentsSnapshot.forEach((doc) => {
             const comment = doc.data();
             const commentElement = document.createElement("div");
-            commentElement.innerHTML = `<div class="com"><div class="userimg">img src="${comment.profileImgUrl}"</div><div class="commenter">${comment.username}</div><div class="comment-content"> ${comment.text}</div></div><hr>`;
+            commentElement.innerHTML = `<div class="coms">
+            <div class="userimg"><img src=${comment.profileImageUrl}></div>
+            <div class="com">
+            <div class="commenter">${comment.username}</div>
+            <div class="comment-content"> ${comment.text}</div></div></div><hr>`;
             commentsList.appendChild(commentElement);
         });
     } catch (error) {
@@ -229,42 +233,27 @@ async function readStory(storyId) {
 
 
 // Function to search stories by title or username
-async function searchStories() {
+
+function searchStories() {
     const searchQuery = document.getElementById('search-input').value.toLowerCase();
-    try {
-        const storiesSnapshot = await db.collection('stories')
 
-            .where("title", ">=", searchQuery)
-            .where("title", "<=", searchQuery + "\uf8ff")  // To get results for partial matching
-            .get();
+    // Filter stories to include partial matches in the title
+    const filteredStories = allStories.filter(story =>
+        story.title.toLowerCase().includes(searchQuery) ||
+        story.content.toLowerCase().includes(searchQuery) ||
+        story.genre.toLowerCase().includes(searchQuery)
+    );
 
-        const storiesContainer = document.getElementById('story-cards-container');
-        storiesContainer.innerHTML = ''; // Clear previous results
-
-        storiesSnapshot.forEach(doc => {
-            const story = doc.data();
-            const storyCard = document.createElement('div');
-            storyCard.classList.add('story-card');
-            storyCard.innerHTML = `
-                    <img src="${story.coverImageUrl}" alt="Cover Image">
-                    <div class="content">
-                        <div class="title">${story.title}</div>
-                        <div class="author">By ${story.username}</div>
-                        <div class="description">${story.content.substring(0, 150)}...</div>
-                        <button class="read-button" onclick="redirectToStory('${doc.id}')">Read Story</button>
-                    </div>
-                `;
-            storiesContainer.appendChild(storyCard);
-        });
-
-        if (storiesSnapshot.empty) {
-            const noResultsMessage = document.createElement('div');
-            noResultsMessage.textContent = 'No stories found.';
-            storiesContainer.appendChild(noResultsMessage);
-        }
-
-    } catch (error) {
-        console.error("Error searching stories:", error);
+    if (searchQuery === "") {
+        // If the search query is empty, display all stories
+        displayStories(allStories);
+    } else if (filteredStories.length === 0) {
+        // If no stories match the search query
+        showAlert("No Stories Found", "Try a different search query");
+        displayStories(allStories); // Optionally show all stories as fallback
+    } else {
+        // Display the filtered stories
+        displayStories(filteredStories);
     }
 }
 

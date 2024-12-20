@@ -118,10 +118,15 @@
   display: flex;
     align-items: start;
     justify-content: space-between;
+    width: 100%;
 }
-.info div{
+.info .box{
   display: flex;
     flex-direction: column;
+    width: 70%;
+}
+.story-actions button{
+padding: 10px 0;
 }
 .story-actions i{
 padding: 0 10px;
@@ -250,7 +255,7 @@ async function loadStories() {
         storyCard.innerHTML = `
             <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${storyId}')">
             <div class="info">
-                <div>
+                <div class="box">
                     <div class="story-title">${story.title}</div>
                     <div class="story-author">By ${story.penName}</div>
                 </div>

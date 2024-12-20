@@ -40,6 +40,11 @@
             width: 30%;
             margin: auto;
         }
+        .highlight-error {
+    border: 2px solid red;
+    background-color: #ffe6e6; /* Light red background for better visibility */
+}
+
     </style>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -73,7 +78,7 @@
         <form id="story-form">
 
             <input type="text" id="story-title" placeholder="Story Title" required>
-            <input type="text" id="story-description" placeholder="description">
+            <input type="text" id="story-description" placeholder="description  - Make it short">
                 
     <select id="story-genre" required>
         <option value="" disabled selected>Select Genre</option>
@@ -139,15 +144,39 @@
                 writeStorySection.style.display = "block";
             } else {
                 writeStorySection.style.display = "none";
-                // alert("Please log in to write a story.");
+        
                 showAlert("LOG IN","Please log in to write a story." )
                 window.location.href = "user.html";
             }
         });
 
-   
+// Validate description
+function validateDescription() {
+    const descriptionField = document.getElementById("story-description");
+    const description = descriptionField.value.trim();
+    const wordCount = description.split(/\s+/).length; // Split by whitespace and count words
+
+    // Remove any previous highlight
+    descriptionField.classList.remove("highlight-error");
+
+    if (wordCount > 8) {
+        showAlert("Error", "Description should not exceed 8 words.");
+        descriptionField.classList.add("highlight-error"); // Highlight the field
+        descriptionField.focus(); // Bring focus to the description field
+        return false;
+    }
+
+    return true;
+}
+
+// Clear highlight when user starts typing
+document.getElementById("story-description").addEventListener("input", () => {
+    document.getElementById("story-description").classList.remove("highlight-error");
+});
+
     
     async function submitStory() {
+        if (!validateDescription()) return;
     const title = document.getElementById("story-title").value;
     const description = document.getElementById("story-description").value;
     const genre = document.getElementById("story-genre").value;

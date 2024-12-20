@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,17 +8,16 @@
     <link rel="stylesheet" href="style.css">
     <script src="app.js"></script>
     <style>
-      
-body{
-    display: flex;
-    justify-content: center;
-    height: 100vh;
-    align-items: center;
-}
+        body {
+            display: flex;
+            justify-content: center;
+            height: 100vh;
+            align-items: center;
+        }
 
         #auth-section {
             background: #e4d3be;
-            width:50vw;
+            width: 50vw;
             padding: 30px;
             height: 100%;
             overflow: hidden;
@@ -27,7 +27,7 @@ body{
             align-items: center;
         }
 
-    
+
         h1 {
             text-align: center;
             color: #444;
@@ -52,7 +52,7 @@ body{
             padding: 10px;
             padding-left: 40px;
             border: 1px solid #ddd;
-            
+
             outline: none;
             font-size: 1em;
             color: #333;
@@ -70,8 +70,8 @@ body{
             transition: all 0.3s;
         }
 
-        .input-group input:focus + label,
-        .input-group input:not(:placeholder-shown) + label {
+        .input-group input:focus+label,
+        .input-group input:not(:placeholder-shown)+label {
             top: -8px;
             background: #949393;
             padding: 0 5px;
@@ -83,16 +83,16 @@ body{
         button {
             width: 100%;
             padding: 12px;
-           
+
             border: none;
-            
+
             font-size: 1em;
             cursor: pointer;
             margin-top: 20px;
             transition: background 0.3s;
         }
 
-      
+
 
         /* Link */
         p {
@@ -103,20 +103,23 @@ body{
         }
 
         p a {
-            color:#999992;;
+            color: #999992;
+            ;
             font-weight: bold;
             cursor: pointer;
             text-decoration: none;
         }
 
         /* Toggle Sections */
-        #login-section, #register-form {
+        #login-section,
+        #register-form {
             opacity: 0;
             display: none;
             transition: opacity 0.5s ease-in-out;
         }
 
-        #login-section.active, #register-form.active {
+        #login-section.active,
+        #register-form.active {
             display: block;
             opacity: 1;
         }
@@ -126,26 +129,29 @@ body{
             display: block;
             opacity: 1;
         }
-        .side-img{
+
+        .side-img {
             background-image: url(assets/background.png);
             background-repeat: no-repeat;
             background-size: cover;
             width: 50vw;
             height: 100%;
         }
-        .pro p{
+
+        .pro p {
             font-weight: 700;
         }
     </style>
 </head>
+
 <body>
     <div class="alert-overlay" id="customAlert">
         <div class="alert-box">
-          <h2 id="alertTitle">Alert</h2>
-          <p id="alertMessage">This is a message.</p>
-          <button onclick="closeAlert()">OK</button>
+            <h2 id="alertTitle">Alert</h2>
+            <p id="alertMessage">This is a message.</p>
+            <button onclick="closeAlert()">OK</button>
         </div>
-      </div>
+    </div>
     <div class="side-img">
 
     </div>
@@ -185,7 +191,7 @@ body{
                 <input type="text" id="register-penname" placeholder=" " required>
                 <label for="register-penname">Pen Name</label>
             </div>
-            <button type="button" onclick="registerUser()">Register</button>
+            <button type="button" id="register-btn" onclick="registerUser()">Register</button>
             <p>Already have an account? <a href="#" onclick="toggleSection()">Login</a></p>
         </form>
     </div>
@@ -211,51 +217,59 @@ body{
             document.getElementById("register-form").classList.toggle("active");
         }
 
+
+        // Login user
+        function loginUser() {
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    window.location.href = "index.html";
+                })
+                .catch(error => {
+                    console.log("Error: " + error.message);
+                    showAlert("Error", "Invalid username or password");
+                });
+        }
         // Register user
-        function registerUser() {
+        async function registerUser() {
             const email = document.getElementById("register-email").value;
             const password = document.getElementById("register-password").value;
             const username = document.getElementById("register-username").value;
             const penName = document.getElementById("register-penname").value;
-            if(email&& password&&username&&penName !="")
-{
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(cred => {
-                    return db.collection("users").doc(cred.user.uid).set({
+            const registerButton = document.getElementById("register-btn");
+
+            if (email && password && username && penName) {
+                // Show spinner and disable button
+                registerButton.disabled = true;
+                registerButton.innerHTML = `
+            <div class="spinner-div"> <span class="spinner"></span></div>
+        `;
+
+                try {
+                    const cred = await auth.createUserWithEmailAndPassword(email, password);
+                    await db.collection("users").doc(cred.user.uid).set({
                         username: username,
                         penName: penName,
                         profileImageUrl: `https://ui-avatars.com/api/?background=343A40&color=ccaa82&name=${encodeURIComponent(username)}`
                     });
-                })
-                .then(() => {
-                    alert("Registration successful!");
+                    showAlert("Registration successful!", "welcome to MIMI BOOK");
                     toggleSection();
-                    window.location.href = "profile.html";
-                })
-                .catch(error =>{ console.log("Error: " + error.message);
-                    alert("username already exist")
-                });
+                    // window.location.href = "profile.html";
+                } catch (error) {
+                    console.log("Error: " + error.message);
+                    alert("Username already exists or registration failed.");
+                } finally {
+                    registerButton.disabled = false;
+                    registerButton.innerHTML = 'Register';
+                }
+            } else {
+                showAlert("Error", "Please fill all fields");
+            }
         }
-        else{
-            showAlert("Error","Please fill all fields")
-        }
-    }
-
-        // Login user
-        function loginUser() {
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-
-    auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-            window.location.href = "index.html";
-        })
-        .catch(error => {
-            console.log("Error: " + error.message); 
-            showAlert("Error","Invalid username or password");  
-        });
-}
 
     </script>
 </body>
+
 </html>
