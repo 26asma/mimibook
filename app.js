@@ -543,7 +543,7 @@ async function loadStoriesByGenre() {
         // Fetch stories by genre
         const storiesSnapshot = await db.collection("stories")
             .where("genre", "==", genre)
-            .limit(5)
+            .limit(4)
             .get();
   
         const stories = [];
@@ -640,7 +640,7 @@ async function loadMostLikedStories() {
         stories.sort((a, b) => b.likeCount - a.likeCount);
 
         // Get the top 5 stories
-        const top5Stories = stories.slice(0, 5);
+        const top5Stories = stories.slice(0, 4);
 
         // Create a section to display the top 5 stories
         const mostLikedSection = document.createElement("div");
