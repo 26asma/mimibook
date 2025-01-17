@@ -5,6 +5,9 @@
     box-sizing: border-box;
     text-transform: capitalize;
 }
+a{
+    text-decoration: none;
+}
 input{
     text-transform: none;
 }
@@ -146,16 +149,31 @@ nav {
 
 .story-card .story-author {
     font-size: 14px;
-    color: #888;
+    color: burlywood;
     padding: 5px 10px;
 
 }
-
+.section-heading i{
+color:#343A40 ;
+}
+.story-author p{
+    font-size: 18px;
+}
+.story-author a{
+    color: burlywood;
+}
+.story-author a:hover{
+    color: #888;
+}
 .story-card .story-actions {
     display: flex;
     justify-content: space-between;
     padding: 15px 10px;
+    flex-direction: column;
 
+}
+.comment-btn i{
+    color: #ccaa82
 }
 
 button {
@@ -234,7 +252,7 @@ button {
 .comments-list {
     margin-top: 10px;
     max-height: 150px;
-    overflow-y: hidden;
+    overflow-y: scroll;
 }
 
 .story-head {
@@ -502,3 +520,79 @@ button {
     display: flex;
     border-radius: 50%;
 }
+
+
+/* Styling for the section-heading */
+h2.section-heading {
+    font-size: 2.2rem;
+    font-family: 'Arial', sans-serif;
+    color: #333;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 30px;
+    padding: 15px 0;
+    letter-spacing: 1px;
+    position: relative;
+   
+    transition: all 0.3s ease-in-out;
+    animation: fadeIn 1s ease-out;
+    z-index: 1;
+   
+    text-transform: uppercase;
+  }
+  
+  /* Fade In Animation */
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Hover Effect */
+  h2.section-heading:hover {
+    color: #212529; /* Color change on hover */
+
+   
+  }
+  
+  /* Underline Animation (for modern style) */
+  h2.section-heading::after {
+    content: "";
+    display: block;
+    width: 15%;
+    height: 3px;
+    background-color:#e4d3be;
+    margin: 10px auto 0;
+    transform: scaleX(0);
+    transition: transform 0.4s ease-in-out;
+  }
+  
+  /* Hover effect for the underline */
+  h2.section-heading:hover::after {
+    transform: scaleX(1);
+  }
+  
+  .mimibook-footer {
+    background: linear-gradient(135deg, #fcf6ef, #e4d3be);
+
+    color:#343a40;
+    padding: 40px 20px;
+
+}
+
+
+.footer-bottom {
+    background: linear-gradient(135deg, #fcf6ef, #e4d3be);
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 10px;
+}
+
+  

@@ -13,7 +13,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="firebaseconfig.js"></script>
     <script src="app.js"></script>
-    <script>
+    <!-- <script>
+
         // Initialize Firebase
         const firebaseConfig = myfirebaseConfig;
         firebase.initializeApp(firebaseConfig);
@@ -27,6 +28,7 @@
             showLoader();
             loadUserProfile(user.uid);
             loadUserStories(user.uid);
+            displayFollowStats(user.uid)
             hideLoader();
         } else {
             window.location.href = "user.html";
@@ -36,6 +38,96 @@
 
 
     
+    </script> -->
+    <script>
+             // Initialize Firebase
+             const firebaseConfig = myfirebaseConfig;
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        document.addEventListener("DOMContentLoaded", () => {
+    auth.onAuthStateChanged(async (user) => {
+        const loader = document.getElementById("loader");
+        if (user) {
+            try {
+                showLoader();
+                await loadUserProfile(user.uid);
+                await loadUserStories(user.uid);
+                await displayFollowStats(user.uid);
+            } catch (error) {
+                console.error("Error loading user data:", error);
+                customAlert("Error", "Failed to load user data. Please try again.");
+            } finally {
+                hideLoader();
+            }
+        } else {
+            window.location.href = "user.html";
+        }
+    });
+});
+
+// Function to show loader
+function showLoader() {
+    const loader = document.getElementById("loader");
+    if (loader) loader.style.display = "flex";
+}
+
+// Function to hide loader
+function hideLoader() {
+    const loader = document.getElementById("loader");
+    if (loader) loader.style.display = "none";
+}
+
+// Function to display follower/following stats
+async function displayFollowStats(userId) {
+    try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        if (!userDoc.exists) {
+            throw new Error("User document not found");
+        }
+
+        const userData = userDoc.data();
+        const followersCount = userData.followers?.length || 0;
+        const followingCount = userData.following?.length || 0;
+
+        const followersElement = document.getElementById("followers-count");
+        const followingElement = document.getElementById("following-count");
+
+        if (followersElement) {
+            followersElement.innerText = followersCount;
+        } else {
+            console.error("Element 'followers-count' not found in the DOM.");
+        }
+
+        if (followingElement) {
+            followingElement.innerText = followingCount;
+        } else {
+            console.error("Element 'following-count' not found in the DOM.");
+        }
+    } catch (error) {
+        console.error("Error fetching follow stats:", error);
+    }
+}
+
+// Example of custom alert
+function customAlert(title, message) {
+    const alertOverlay = document.getElementById("customAlert");
+    const alertTitle = document.getElementById("alertTitle");
+    const alertMessage = document.getElementById("alertMessage");
+    if (alertOverlay && alertTitle && alertMessage) {
+        alertTitle.innerText = title;
+        alertMessage.innerText = message;
+        alertOverlay.style.display = "block";
+    }
+}
+
+function closeAlert() {
+    const alertOverlay = document.getElementById("customAlert");
+    if (alertOverlay) alertOverlay.style.display = "none";
+}
+
     </script>
     <style>
         .profile-page{
@@ -46,7 +138,7 @@
             width: 15%;
             height: 100vh;
             position: fixed;
-            padding: 20px 5px;
+            padding: 10px 5px;
             display:flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -64,7 +156,19 @@
              padding: 20px 0 0 20px;
             
         }
- 
+       .sidebar  button{
+        margin: 5px;
+      }
+        .follow-action {
+    display: flex
+;
+    width: 100%;
+    justify-content: flex-end;
+    padding: 0 0 10px 0;
+}
+.follow-action button{
+    margin: 0;
+}
      
     </style>
 </head>
@@ -79,6 +183,11 @@
       </div>
     <div class="profile-page">
         <aside class="sidebar">
+            <div class="follow-action">
+
+                <button onclick="logoutUser()">Logout</button>
+             
+            </div>
             <div class="profile-img-container">
                 <img id="profile-img" src=""  style="border-radius: 50%;" alt="Profile Image" class="rounded-profile"  >
             
@@ -86,7 +195,9 @@
             </div>
             <h3 id="username"></h3>
             <h4 id="pen-name"></h4>
-            <button onclick="logoutUser()">Logout</button>
+            <button>Followers <span id="followers-count"></span></button>
+            <button>Following <span id="following-count"></span></button>
+            
         </aside>
 
         <section class="main-content">
@@ -101,7 +212,7 @@
                     <li><a  class="active" href="profile.html">Your Account</a></li>
                 </ul>
             </nav>
-            <h2 class="pro">My Stories</h2>
+            
             <div class="story-container">
                 <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 50vh;   width: 80vw;  z-index: 10;">
                     <div class="loader">
@@ -114,6 +225,6 @@
         </section>
     </div>
 
-    
+  
 </body>
 </html>

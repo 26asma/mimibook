@@ -9,6 +9,7 @@ function loadUserProfile(uid) {
                 profileImg.src = userData.profileImageUrl;
                 document.getElementById("username").textContent = userData.username;
                 document.getElementById("pen-name").textContent = userData.penName;
+                
             } else {
                 console.log("No user profile found for the given UID.");
             }
@@ -18,6 +19,11 @@ function loadUserProfile(uid) {
             showAlert('Error', 'Check your connection and try again.');
         });
 }
+
+
+
+
+
 
 
 function loadUserStories() {
@@ -63,6 +69,23 @@ function loadUserStories() {
             console.error("Error loading stories:", error);
             showAlert('Error', 'check your connection and try again')
         });
+}
+
+
+function getStylishHeading(genre) {
+    const headings = {
+        Romance: `<i class="fa fa-heart"></i> Romantic Tales You'll Adore <i class="fa fa-heart"></i>`,
+        Thriller: `<i class="fa fa-bolt"></i> Edge-of-Your-Seat Thrillers <i class="fa fa-bolt"></i>`,
+        Fantasy: `<i class="fa fa-magic"></i> Escape Into Fantasy Worlds <i class="fa fa-magic"></i>`,
+        Mystery: `<i class="fa fa-search"></i> Solve Intriguing Mysteries <i class="fa fa-search"></i>`,
+        SciFi: `<i class="fa fa-rocket"></i> Sci-Fi Adventures Await <i class="fa fa-rocket"></i>`,
+        Adventure: `<i class="fa fa-map"></i> Explore Epic Journeys <i class="fa fa-map"></i>`,
+        Comedy: `<i class="fa fa-laugh"></i> Stories to Make You Laugh <i class="fa fa-laugh"></i>`,
+        Horror: `<i class="fa fa-ghost"></i> Tales to Haunt Your Dreams <i class="fa fa-ghost"></i>`,
+        default: `<i class="fa fa-book"></i> Discover Stories You'll Love <i class="fa fa-book"></i>`,
+    };
+
+    return headings[genre] || headings.default;
 }
 
 
@@ -142,19 +165,64 @@ async function loadComments(storyId) {
     }
 }
 
-// Add a new comment
+// // Add a new comment
+// async function addComment(storyId) {
+//     const commentInput = document.getElementById(`comment-input-${storyId}`);
+//     const text = commentInput.value.trim();
+//     const userId = firebase.auth().currentUser.uid;
+
+//     if (!text) return showAlert("Error", "Comment cannot be empty!");
+
+//     try {
+//         const userDoc = await db.collection("users").doc(userId).get();
+//         const username = userDoc.data().username;
+//         const profileImageUrl=userDoc.data().profileImageUrl;
+
+//         await db
+//             .collection("stories")
+//             .doc(storyId)
+//             .collection("comments")
+//             .add({
+//                 username,
+//                 text,
+//                 profileImageUrl,
+//                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+//             });
+
+//         commentInput.value = "";
+//         loadComments(storyId);
+//     } catch (error) {
+//         console.error("Error adding comment:", error);
+//         showAlert("Error", "Error adding comment!try again.");
+//     }
+// }
+
 async function addComment(storyId) {
     const commentInput = document.getElementById(`comment-input-${storyId}`);
-    const text = commentInput.value.trim();
-    const userId = firebase.auth().currentUser.uid;
+    const commentButton = document.querySelector(`.comment-btn[onclick*="${storyId}"]`);
 
-    if (!text) return showAlert("Error", "Comment cannot be empty!");
+    const text = commentInput.value.trim();
+    const userId = auth.currentUser.uid; // Assuming auth is initialized globally
+
+    // Validate if comment text is provided
+    if (!text) {
+        showAlert("Error", "Comment cannot be empty!");
+        return;
+    }
+
+    // Disable the button and show loading state
+    commentButton.disabled = true;
+    commentButton.innerHTML = `<div class="spinner-div"><span class="spinner"></span></div>`;
 
     try {
+        // Fetch user details
         const userDoc = await db.collection("users").doc(userId).get();
-        const username = userDoc.data().username;
-        const profileImageUrl=userDoc.data().profileImageUrl;
+        if (!userDoc.exists) {
+            throw new Error("User profile not found.");
+        }
+        const { username, profileImageUrl } = userDoc.data();
 
+        // Add the comment to Firestore
         await db
             .collection("stories")
             .doc(storyId)
@@ -166,14 +234,19 @@ async function addComment(storyId) {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
 
+        // Clear input and reload comments
         commentInput.value = "";
         loadComments(storyId);
+        showAlert("Success", "Comment added successfully!");
     } catch (error) {
         console.error("Error adding comment:", error);
-        showAlert("Error", "Error adding comment!try again.");
+        showAlert("Error", "Failed to add comment. Please try again.");
+    } finally {
+        // Restore the button state
+        commentButton.disabled = false;
+        commentButton.innerHTML = "Post Comment"; // Restore original button text
     }
 }
-
 
 
 
@@ -200,7 +273,7 @@ async function readStory(storyId) {
             return;
         }
         const story = storyDoc.data();
-        const textToRead = `${story.title}. ${story.content}`.slice(0, 500);
+        const textToRead = `${story.title}. ${story.content}`.slice(0, 1500);
 
         // Send text to Hugging Face API
         const response = await fetch(API_URL, {
@@ -458,10 +531,182 @@ function showConfirm(message) {
 }
 
 
+const genres = ["Horror", "Fantasy", "Romance", "Adventure"];
+const sectionsContainer = document.getElementById("sections");
+
+
+async function loadStoriesByGenre() {
+   
+    
+  
+    for (const genre of genres) {
+        // Fetch stories by genre
+        const storiesSnapshot = await db.collection("stories")
+            .where("genre", "==", genre)
+            .limit(4)
+            .get();
+  
+        const stories = [];
+        for (const doc of storiesSnapshot.docs) {
+            const storyData = doc.data();
+            const likeCount = storyData.likes ? Object.keys(storyData.likes).length : 0;
+            
+            // Query the comments subcollection to get the comment count
+            const commentsSnapshot = await db.collection("stories").doc(doc.id).collection("comments").get();
+            const commentCount = commentsSnapshot.size; // This gives the number of comment documents
+
+            stories.push({
+                id: doc.id,
+                ...storyData,
+                likeCount,
+                commentCount,
+            });
+        }
+  
+        // Skip section if no stories found
+        if (stories.length === 0) continue;
+  
+        // Create section
+        const section = document.createElement("div");
+        section.className = "story-section";
+  
+        section.innerHTML = `
+ <h2 class="section-heading">${ getStylishHeading(genre)}</h2>
+            <div class="story-container">
+                ${stories.map(story => {
+                    const user = firebase.auth().currentUser; // Check user authentication status
+                    const userId = user ? user.uid : null;
+                    const isLiked = user && story.likes && story.likes[userId]; // Example of user-specific like logic
+                    return `
+                        <div class="story-card">
+                            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${story.id}')">
+                            <div class="info">
+                                <div class="box">
+                                    <div class="story-title">${story.title}</div>
+                                   <div class="story-author"><p>By <a href="targetprofile.html?targetUserId=${story.userId}">${story.username}</a></p></div>
+                                </div>
+                                <div class="story-actions">
+                                    <button class="like-btn">
+                                        <i class="fa fa-heart ${isLiked ? "liked" : ""}" 
+                                           onclick="likeStory('${story.id}', event)"></i>
+                                        <span>${story.likeCount}</span>
+                                    </button>
+                                    <button class="comment-btn">
+                                        <i class="fa fa-comment"></i>
+                                        <span>${story.commentCount}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+  
+       
+        sectionsContainer.appendChild(section);
+    }
+}
 
 
 
+async function loadMostLikedStories() {
+   
 
+    try {
+        // Fetch all stories from Firestore
+        const storiesSnapshot = await db.collection("stories").get();
 
+        const stories = [];
 
+        // Process each story
+        for (const doc of storiesSnapshot.docs) {
+            const storyData = doc.data();
+            const likeCount = storyData.likes ? Object.keys(storyData.likes).length : 0;
 
+            // Query the comments subcollection to get the comment count
+            const commentsSnapshot = await db.collection("stories").doc(doc.id).collection("comments").get();
+            const commentCount = commentsSnapshot.size; // This gives the number of comment documents
+
+            stories.push({
+                id: doc.id,
+                ...storyData,
+                likeCount,
+                commentCount,
+            });
+        }
+
+        // Sort stories by like count in descending order
+        stories.sort((a, b) => b.likeCount - a.likeCount);
+
+        // Get the top 5 stories
+        const top5Stories = stories.slice(0, 4);
+
+        // Create a section to display the top 5 stories
+        const mostLikedSection = document.createElement("div");
+        mostLikedSection.className = "story-section";
+
+        mostLikedSection.innerHTML = `
+            <h2 class="section-heading">Most Loved Tales of MimiBook</h2>
+            <div class="story-container">
+                ${top5Stories.map(story => {
+                    const user = firebase.auth().currentUser; // Check user authentication status
+                    const userId = user ? user.uid : null;
+                    const isLiked = user && story.likes && story.likes[userId];
+                    return `
+                        <div class="story-card">
+                            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${story.id}')">
+                            <div class="info">
+                                <div class="box">
+                                    <div class="story-title">${story.title}</div>
+                                  
+    <div class="story-author"><p>By <a href="targetprofile.html?targetUserId=${story.userId}">${story.username}</a></p></div>
+    
+    </button>
+    
+
+                                </div>
+                                <div class="story-actions">
+                                    <button class="like-btn">
+                                        <i class="fa fa-heart ${isLiked ? "liked" : ""}" 
+                                           onclick="likeStory('${story.id}', event)"></i>
+                                        <span>${story.likeCount}</span>
+                                    </button>
+                                    <button class="comment-btn">
+                                        <i class="fa fa-comment"></i>
+                                        <span>${story.commentCount}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        if (stories.length === 0) {
+            showAlert("No Stories Found", "No stories are available to display.");
+        }
+        hideLoader();
+        // Append the section to the container
+        sectionsContainer.appendChild(mostLikedSection);
+    } catch (error) {
+        console.error("Error loading most liked stories:", error);
+        showAlert("Error", "Failed to load most liked stories. Please try again.");
+    } 
+}
+
+async function displayFollowStats(userId) {
+    try {
+        const userDoc = await db.collection("users").doc(userId).get();
+        const userData = userDoc.data();
+
+        const followersCount = userData.followers?.length || 0;
+        const followingCount = userData.following?.length || 0;
+
+        document.querySelector("followers-count").innerText = `${followersCount} Followers`;
+        document.querySelector("following-count").innerText = `${followingCount} Following`;
+    } catch (error) {
+        console.error("Error fetching follow stats:", error);
+    }
+}

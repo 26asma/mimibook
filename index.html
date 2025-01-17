@@ -120,14 +120,15 @@
 }
 .info{
   display: flex;
-    align-items: start;
+    align-items: baseline;
     justify-content: space-between;
-    width: 100%;
-}
-.info .box{
+  }
+.info .box{  
   display: flex;
     flex-direction: column;
     width: 70%;
+    justify-content: space-between;
+    height: 117px;
 }
 .story-actions button{
 padding: 10px 0;
@@ -185,16 +186,16 @@ padding: 0 10px;
   <section id="features">
     <h2>What You Can Do</h2>
     <div class="card-container">
-      <div class="card">
+      <a href="write.html"><div class="card" >
         <i class="fa-solid fa-book"></i>
         <h3>Write Stories</h3>
         <p>Share your creativity with the world by writing your own stories.</p>
-      </div>
-      <div class="card">
+      </div></a>
+      <a href="read.html"><div class="card">
         <i class="fa-solid fa-book-open-reader"></i>
         <h3>Read Stories</h3>
         <p>Discover captivating tales written by other passionate storytellers.</p>
-      </div>
+      </div></a>
       <div class="card">
         <i class="fa fa-heart"></i>
         <h3>Like and Comment </h3>
@@ -214,11 +215,19 @@ padding: 0 10px;
       <div></div>
     </div> 
   </div>
-  <div class="story-container" id="story-container">
+ 
    
     <!-- Story cards will be dynamically added here -->
- 
-  </div>
+    <div id="sections" >
+      <!-- Story sections will be dynamically added here -->
+    </div>
+    <footer>
+     
+      <div class="footer-bottom">
+          <p>&copy; 2025 MimiBook. All rights reserved.</p>
+      </div>
+  </footer>
+  
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -235,52 +244,12 @@ padding: 0 10px;
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
-
-    // Function to display stories
-
-async function loadStories() {
-    showLoader();
-    const storiesSnapshot = await db.collection("stories").get();
-    const storyContainer = document.getElementById("story-container");
-
-    storyContainer.innerHTML = ""; // Clear previous stories
-
-    const user = firebase.auth().currentUser; // Check user authentication status
-    const userId = user ? user.uid : null;
-
-    storiesSnapshot.forEach(doc => {
-        const story = doc.data();
-        const storyId = doc.id;
-        const isLiked = user && story.likes && story.likes[userId];
-
-        const storyCard = document.createElement("div");
-        storyCard.classList.add("story-card");
-
-        storyCard.innerHTML = `
-            <img src="${story.coverImageUrl}" alt="${story.title}" onclick="openStory('${storyId}')">
-            <div class="info">
-                <div class="box">
-                    <div class="story-title">${story.title}</div>
-                    <div class="story-author">By ${story.penName}</div>
-                </div>
-                <div class="story-actions">
-                    <button class="like-btn">
-                        <i class="fa fa-heart ${isLiked ? "liked" : ""}" 
-                           onclick="likeStory('${storyId}', event)"></i>
-                        <span>${story.likes ? Object.keys(story.likes).length : 0}</span>
-                    </button>
-                </div>
-            </div>`;
-
-        storyContainer.appendChild(storyCard);
-    });
-    hideLoader();
-}
-
+     
+    window.onload = async function() {
+      await loadMostLikedStories(); // Load most liked stories
+      loadStoriesByGenre();  // Load stories by genre
+};
    
-
-    // Load stories on page load
-    window.onload = loadStories;
   </script>
 </body>
 

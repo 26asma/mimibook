@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIMI BOOK - Profile</title>
+    <link rel="icon" type="image/png" href="assets/6266373-84.png">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="firebaseconfig.js"></script>
+    <style>
+        /* Basic styling */
+        .profile-page {
+            display: flex;
+        }
+        .follow-action {
+    display: flex
+;
+    width: 100%;
+    justify-content: flex-end;
+    padding: 0 0 10px 0;
+}
+.follow-action button{
+    margin: 0;
+}
+        .sidebar {
+            background-color: #F9F9F9;
+            width: 15%;
+            height: 100vh;
+            position: fixed;
+            padding: 10px 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .main-content {
+            margin-left: 15%;
+            width: 100%;
+        }
+        .story-container {
+            padding: 20px;
+        }
+
+      button{
+        margin: 5px;
+      }
+    </style>
+</head>
+<body>
+    <div class="profile-page">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="follow-action">
+
+                <button id="follow-btn" class="follow-button">Follow</button>
+            </div>
+            <div class="profile-img-container">
+                <img id="profile-img" src="" alt="Profile Image" style="border-radius: 50%;" />
+            </div>
+            <h3 id="username"></h3>
+            <h4 id="pen-name"></h4>
+            <button>Followers <span id="followers-count">0</span></button>
+            <button>Following <span id="following-count">0</span></button>
+        </aside>
+
+        <!-- Main Content -->
+        <section class="main-content">
+            <nav class="nav-bar">
+                <div class="logo">
+                    <a href="index.html"><img src="assets/logo.png" alt="Logo" class="logo-img"></a>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="read.html">Read</a></li>
+                    <li><a href="write.html">Write</a></li>
+                    <li><a  class="active" href="profile.html">Your Account</a></li>
+                </ul>
+            </nav>
+            <div class="story-container">
+                <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 50vh;   width: 80vw;  z-index: 10;">
+                    <div class="loader">
+                      <div></div>
+                      <div></div>
+                      <div></div>
+                    </div>
+                  </div>
+                  <!-- Modal -->
+<div id="userListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);">
+    <div style="position: relative; margin: 10% auto; padding: 20px; background: white; width: 50%; border-radius: 10px;">
+        <h2 id="modal-title">Users</h2>
+        <ul id="user-list" style="list-style: none; padding: 0;"></ul>
+        <button onclick="closeModal()" style="margin-top: 10px; padding: 10px 20px; background: #FF5722; color: white; border: none; border-radius: 5px;">Close</button>
+    </div>
+</div>
+
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = myfirebaseConfig;
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Get Target User ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetUserId = urlParams.get("targetUserId");
+
+        // DOM Elements
+        const followBtn = document.getElementById("follow-btn");
+
+        // On Page Load
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (targetUserId) {
+                try {
+                    await loadTargetUserProfile(targetUserId);
+                    loadTargetUserStories(targetUserId);
+                    await updateFollowButtonState(auth.currentUser?.uid, targetUserId);
+                    followBtn.addEventListener("click", () => handleFollowUnfollow(targetUserId));
+                } catch (error) {
+                    console.error("Error loading user data:", error);
+                }
+            } else {
+                console.error("No target user ID provided.");
+            }
+        });
+        
+
+        // Load Target User Profile
+        async function loadTargetUserProfile(userId) {
+            const userDoc = await db.collection("users").doc(userId).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                document.getElementById("profile-img").src = userData.profileImageUrl || "default-avatar.png";
+                document.getElementById("username").innerText = userData.username || "Unknown";
+                document.getElementById("pen-name").innerText = userData.penName || "Unknown";
+                document.getElementById("followers-count").innerText = userData.followers?.length || 0;
+                document.getElementById("following-count").innerText = userData.following?.length || 0;
+            } else {
+                throw new Error("User not found");
+            }
+        }
+        // load target user stories
+        function loadTargetUserStories(userId) {
+    
+    db.collection("stories").where("userId", "==", userId)
+        .orderBy("createdAt", "desc")
+        .get()
+        .then(snapshot => {
+            const storyList = document.querySelector(".story-container");
+            storyList.innerHTML = "";
+
+            snapshot.forEach(doc => {
+                const storyData = doc.data();
+                const storyItem = document.createElement("div");
+                storyItem.classList.add("story-card");
+
+                // Function to format the date
+                const formatDate = (timestamp) => {
+                    // If it's a Firestore Timestamp, convert it to a JavaScript Date object
+                    const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
+                    return date.toLocaleDateString(); // This will format the date (e.g., "12/6/2024")
+                };
+
+                // Get the display date (prioritize updatedAt, fallback to createdAt)
+                const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
+
+                // Set the innerHTML with formatted date
+                storyItem.innerHTML = 
+                   `<div class="pro">
+                        <h4>${storyData.title}</h4>
+                        <div><button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
+                       </div>
+                    </div>
+                    <img src="${storyData.coverImageUrl}" alt="Cover Image"> 
+                    <h4 class="pro">Published on ${displayDate}</h4> `
+                    
+                ;
+
+                storyList.appendChild(storyItem);
+            });
+        })
+        .catch(error => {
+            console.error("Error loading stories:", error);
+            showAlert('Error', 'check your connection and try again')
+        });
+}
+
+
+        // Update Follow Button State
+        async function updateFollowButtonState(currentUserId, targetUserId) {
+            if (!currentUserId) return;
+            const followDoc = await db.collection("following")
+                .doc(currentUserId)
+                .collection("userFollowing")
+                .doc(targetUserId)
+                .get();
+
+            if (followDoc.exists) {
+                followBtn.textContent = "Following";
+                followBtn.classList.add("following");
+            } else {
+                followBtn.textContent = "Follow";
+                followBtn.classList.remove("following");
+            }
+        }
+
+        // Follow/Unfollow Logic
+        async function handleFollowUnfollow(targetUserId) {
+            const currentUserId = auth.currentUser?.uid;
+
+            if (!currentUserId) {
+                alert("Please log in to follow users.");
+                return;
+            }
+
+            const followDocRef = db.collection("following")
+                .doc(currentUserId)
+                .collection("userFollowing")
+                .doc(targetUserId);
+
+            const userDocRef = db.collection("users").doc(targetUserId);
+
+            try {
+                const followDoc = await followDocRef.get();
+
+                if (followDoc.exists) {
+                    // Unfollow the user
+                    await followDocRef.delete();
+                    await userDocRef.update({
+                        followers: firebase.firestore.FieldValue.arrayRemove(currentUserId),
+                    });
+                    followBtn.textContent = "Follow";
+                    followBtn.classList.remove("following");
+                } else {
+                    // Follow the user
+                    await followDocRef.set({ followedAt: firebase.firestore.Timestamp.now() });
+                    await userDocRef.update({
+                        followers: firebase.firestore.FieldValue.arrayUnion(currentUserId),
+                    });
+                    followBtn.textContent = "Following";
+                    followBtn.classList.add("following");
+                }
+
+                // Update Follower Count
+                const updatedUserDoc = await userDocRef.get();
+                const updatedUserData = updatedUserDoc.data();
+                document.getElementById("followers-count").innerText = updatedUserData.followers?.length || 0;
+            } catch (error) {
+                console.error("Error updating follow state:", error);
+            }
+        }
+    
+    
+    </script>
+</body>
+</html>

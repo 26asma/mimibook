@@ -103,6 +103,9 @@
         .read-button {
             border-bottom: 1px solid #ccaa82;
         }
+        .story-author p{
+            font-size: 14px;
+        }
     </style>
 </head>
 
@@ -196,14 +199,14 @@
             stories.forEach(story => {
                 const storyCard = document.createElement('div');
                 storyCard.classList.add('story-card');
-                storyCard.innerHTML = `<div class="author"><div class="author-img"><img src="${story.userImageUrl}" alt="Author Image" onclick="openStory('${story.id}')"></div>
-                <div class="story-author"> ${story.username}</div></div>
+                storyCard.innerHTML = `<div class="author"><div class="author-img"><a href="targetprofile.html?targetUserId=${story.userId}"><img src="${story.userImageUrl}" alt="Author Image"></a></div>
+                <div class="story-author"><p><a href="targetprofile.html?targetUserId=${story.userId}">${story.username}</a></p></div></div>
                     <img src="${story.coverImageUrl}" alt="Cover Image" onclick="openStory('${story.id}')">
                     <div class="info">
                         
                         <div class="story-title">${story.title}</div>
                         
-                        <div class="description">${story.description}</div>
+                       
                         <button class="read-button" onclick="openStory('${story.id}')">Read Story</button>
                     </div>
                 `;

@@ -240,7 +240,8 @@
             const username = document.getElementById("register-username").value;
             const penName = document.getElementById("register-penname").value;
             const registerButton = document.getElementById("register-btn");
-
+const followers=[];
+const following=[];
             if (email && password && username && penName) {
                 // Show spinner and disable button
                 registerButton.disabled = true;
@@ -253,7 +254,9 @@
                     await db.collection("users").doc(cred.user.uid).set({
                         username: username,
                         penName: penName,
-                        profileImageUrl: `https://ui-avatars.com/api/?background=343A40&color=ccaa82&name=${encodeURIComponent(username)}`
+                        profileImageUrl: `https://ui-avatars.com/api/?background=343A40&color=ccaa82&name=${encodeURIComponent(username)}`,
+                        followers:followers,
+                        following:following
                     });
                     showAlert("Registration successful!", "welcome to MIMI BOOK");
                     toggleSection();
