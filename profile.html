@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,14 +8,14 @@
     <link rel="icon" type="image/png" href="assets/6266373-84.png">
     <link rel="stylesheet" href="style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="firebaseconfig.js"></script>
     <script src="app.js"></script>
-    <!-- <script>
 
+    <script>
         // Initialize Firebase
         const firebaseConfig = myfirebaseConfig;
         firebase.initializeApp(firebaseConfig);
@@ -23,181 +24,301 @@
         const storage = firebase.storage();
 
         document.addEventListener("DOMContentLoaded", () => {
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            showLoader();
-            loadUserProfile(user.uid);
-            loadUserStories(user.uid);
-            displayFollowStats(user.uid)
-            hideLoader();
-        } else {
-            window.location.href = "user.html";
+            auth.onAuthStateChanged(async (user) => {
+                const loader = document.getElementById("loader");
+                if (user) {
+                    try {
+                        showLoader();
+                        await loadUserProfile(user.uid);
+                        await loadUserStories(user.uid);
+                        await displayFollowStats(user.uid);
+                    } catch (error) {
+                        console.error("Error loading user data:", error);
+                        customAlert("Error", "Failed to load user data. Please try again.");
+                    } finally {
+                        hideLoader();
+                    }
+                } else {
+                    window.location.href = "user.html";
+                }
+            });
+        });
+
+        // Function to show loader
+        function showLoader() {
+            const loader = document.getElementById("loader");
+            if (loader) loader.style.display = "flex";
         }
-    });
-});
 
+        // Function to hide loader
+        function hideLoader() {
+            const loader = document.getElementById("loader");
+            if (loader) loader.style.display = "none";
+        }
 
-    
-    </script> -->
-    <script>
-             // Initialize Firebase
-             const firebaseConfig = myfirebaseConfig;
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+        // Function to display follower/following stats
+        async function displayFollowStats(userId) {
+            try {
+                const userDoc = await db.collection("users").doc(userId).get();
+                if (!userDoc.exists) {
+                    throw new Error("User document not found");
+                }
+
+                const userData = userDoc.data();
+                const followersCount = userData.followers?.length || 0;
+                const followingCount = userData.following?.length || 0;
+
+                const followersElement = document.getElementById("followers-count");
+                const followingElement = document.getElementById("following-count");
+
+                if (followersElement) {
+                    followersElement.innerText = followersCount;
+                } else {
+                    console.error("Element 'followers-count' not found in the DOM.");
+                }
+
+                if (followingElement) {
+                    followingElement.innerText = followingCount;
+                } else {
+                    console.error("Element 'following-count' not found in the DOM.");
+                }
+            } catch (error) {
+                console.error("Error fetching follow stats:", error);
+            }
+        }
+
+        // Example of custom alert
+        function customAlert(title, message) {
+            const alertOverlay = document.getElementById("customAlert");
+            const alertTitle = document.getElementById("alertTitle");
+            const alertMessage = document.getElementById("alertMessage");
+            if (alertOverlay && alertTitle && alertMessage) {
+                alertTitle.innerText = title;
+                alertMessage.innerText = message;
+                alertOverlay.style.display = "block";
+            }
+        }
+
+        function closeAlert() {
+            const alertOverlay = document.getElementById("customAlert");
+            if (alertOverlay) alertOverlay.style.display = "none";
+        }
+        async function fetchFollowersList() {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                console.error("No user is logged in.");
+                return;
+            }
+
+            try {
+                // Fetch user data from Firestore
+                const userDoc = await firebase.firestore().collection("users").doc(user.uid).get();
+                if (!userDoc.exists) {
+                    console.error("User data not found.");
+                    return;
+                }
+
+                const userData = userDoc.data();
+                const followers = userData?.followers || []; // Fallback to empty array if no followers
+
+                // Display followers
+                displayFollowers(followers);
+            } catch (error) {
+                console.error("Error fetching followers list:", error);
+            }
+        }
+
+        async function displayFollowers(followers) {
+            const followersList = document.getElementById("followers-list");
+            followersList.innerHTML = ""; // Clear previous list
+
+            if (followers.length === 0) {
+                followersList.innerHTML = "<li>No followers found.</li>";
+                return;
+            }
+
+            for (const followerId of followers) {
+                try {
+                    // Fetch follower's data from Firestore
+                    const followerDoc = await firebase.firestore().collection("users").doc(followerId).get();
+                    const followerData = followerDoc.data();
+
+                    if (followerData) {
+                        const listItem = document.createElement("li");
+
+                        listItem.innerHTML = `
+                    <a href="targetprofile.html?targetUserId=${followerId}">
+                        <img src="${followerData.profileImageUrl || 'default-profile.png'}" alt="${followerData.username}" />
+                    </a>
+                    <span>${followerData.username || "Unknown User"}</span>
+                `;
+                        followersList.appendChild(listItem);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching data for follower ID: ${followerId}`, error);
+                }
+            }
+        }
+        async function fetchFollowingList() {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                console.error("No user is logged in.");
+                return;
+            }
+
+            try {
+                // Fetch user data from Firestore
+                const userDoc = await firebase.firestore().collection("users").doc(user.uid).get();
+                if (!userDoc.exists) {
+                    console.error("User data not found.");
+                    return;
+                }
+
+                const userData = userDoc.data();
+                const following = userData?.following || []; // Fallback to empty array if no following
+
+                // Display following
+                displayFollowing(following);
+            } catch (error) {
+                console.error("Error fetching following list:", error);
+            }
+        }
+
+        async function displayFollowing(following) {
+            const followingList = document.getElementById("following-list");
+            followingList.innerHTML = ""; // Clear previous list
+
+            if (following.length === 0) {
+                followingList.innerHTML = "<li>Not following anyone.</li>";
+                return;
+            }
+
+            for (const followingId of following) {
+                try {
+                    // Fetch following user's data from Firestore
+                    const followingDoc = await firebase.firestore().collection("users").doc(followingId).get();
+                    const followingData = followingDoc.data();
+
+                    if (followingData) {
+                        const listItem = document.createElement("li");
+
+                        listItem.innerHTML = `
+                    <a href="targetprofile.html?targetUserId=${followingId}">
+                        <img src="${followingData.profileImageUrl || 'default-profile.png'}" alt="${followingData.username}" />
+                    </a>
+                    <span>${followingData.username || "Unknown User"}</span>
+                `;
+                        followingList.appendChild(listItem);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching data for following ID: ${followingId}`, error);
+                }
+            }
+        }
 
         document.addEventListener("DOMContentLoaded", () => {
-    auth.onAuthStateChanged(async (user) => {
-        const loader = document.getElementById("loader");
-        if (user) {
-            try {
-                showLoader();
-                await loadUserProfile(user.uid);
-                await loadUserStories(user.uid);
-                await displayFollowStats(user.uid);
-            } catch (error) {
-                console.error("Error loading user data:", error);
-                customAlert("Error", "Failed to load user data. Please try again.");
-            } finally {
-                hideLoader();
-            }
-        } else {
-            window.location.href = "user.html";
-        }
-    });
-});
+            // Open followers modal
+            document.querySelector(".followers-btn").addEventListener("click", async () => {
+                await fetchFollowersList(); // Fetch and display followers
+                document.getElementById("followers-modal").style.display = "flex"; // Open the modal
+            });
 
-// Function to show loader
-function showLoader() {
-    const loader = document.getElementById("loader");
-    if (loader) loader.style.display = "flex";
-}
+            // Open following modal
+            document.querySelector(".following-btn").addEventListener("click", async () => {
+                await fetchFollowingList(); // Fetch and display following
+                document.getElementById("following-modal").style.display = "flex"; // Open the modal
+            });
 
-// Function to hide loader
-function hideLoader() {
-    const loader = document.getElementById("loader");
-    if (loader) loader.style.display = "none";
-}
+            // Close followers modal
+            document.getElementById("close-modal").addEventListener("click", () => {
+                document.getElementById("followers-modal").style.display = "none";
+            });
 
-// Function to display follower/following stats
-async function displayFollowStats(userId) {
-    try {
-        const userDoc = await db.collection("users").doc(userId).get();
-        if (!userDoc.exists) {
-            throw new Error("User document not found");
-        }
+            // Close following modal
+            document.getElementById("close-following-modal").addEventListener("click", () => {
+                document.getElementById("following-modal").style.display = "none";
+            });
+        });
 
-        const userData = userDoc.data();
-        const followersCount = userData.followers?.length || 0;
-        const followingCount = userData.following?.length || 0;
-
-        const followersElement = document.getElementById("followers-count");
-        const followingElement = document.getElementById("following-count");
-
-        if (followersElement) {
-            followersElement.innerText = followersCount;
-        } else {
-            console.error("Element 'followers-count' not found in the DOM.");
-        }
-
-        if (followingElement) {
-            followingElement.innerText = followingCount;
-        } else {
-            console.error("Element 'following-count' not found in the DOM.");
-        }
-    } catch (error) {
-        console.error("Error fetching follow stats:", error);
-    }
-}
-
-// Example of custom alert
-function customAlert(title, message) {
-    const alertOverlay = document.getElementById("customAlert");
-    const alertTitle = document.getElementById("alertTitle");
-    const alertMessage = document.getElementById("alertMessage");
-    if (alertOverlay && alertTitle && alertMessage) {
-        alertTitle.innerText = title;
-        alertMessage.innerText = message;
-        alertOverlay.style.display = "block";
-    }
-}
-
-function closeAlert() {
-    const alertOverlay = document.getElementById("customAlert");
-    if (alertOverlay) alertOverlay.style.display = "none";
-}
 
     </script>
     <style>
-        .profile-page{
+        .profile-page {
             display: flex;
         }
-        .sidebar{
+
+        .sidebar {
             background-color: #F9F9F9;
             width: 15%;
             height: 100vh;
             position: fixed;
             padding: 10px 5px;
-            display:flex;
+            display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
         }
-        .main-content{
+
+        .main-content {
             margin-left: 15%;
             width: 100%;
         }
-        h2{
-            padding: 20px;  
+
+        h2 {
+            padding: 20px;
         }
-        .story-container{
-             margin: 0;
-             padding: 20px 0 0 20px;
-            
+
+        .story-container {
+            margin: 0;
+            padding: 20px 0 0 20px;
+
         }
-       .sidebar  button{
-        margin: 5px;
-      }
+
+        .sidebar button {
+            margin: 5px;
+        }
+
         .follow-action {
-    display: flex
-;
-    width: 100%;
-    justify-content: flex-end;
-    padding: 0 0 10px 0;
-}
-.follow-action button{
-    margin: 0;
-}
-     
+            display: flex;
+            width: 100%;
+            justify-content: flex-end;
+            padding: 0 0 10px 0;
+        }
+
+        .follow-action button {
+            margin: 0;
+        }
     </style>
 </head>
+
 <body>
-  
-      <div class="alert-overlay" id="customAlert">
+
+    <div class="alert-overlay" id="customAlert">
         <div class="alert-box">
-          <h2 id="alertTitle">Alert</h2>
-          <p id="alertMessage">This is a message.</p>
-          <button onclick="closeAlert()">OK</button>
+            <h2 id="alertTitle">Alert</h2>
+            <p id="alertMessage">This is a message.</p>
+            <button onclick="closeAlert()">OK</button>
         </div>
-      </div>
+    </div>
     <div class="profile-page">
         <aside class="sidebar">
             <div class="follow-action">
 
                 <button onclick="logoutUser()">Logout</button>
-             
+
             </div>
             <div class="profile-img-container">
-                <img id="profile-img" src=""  style="border-radius: 50%;" alt="Profile Image" class="rounded-profile"  >
-            
-        
+                <img id="profile-img" src="" style="border-radius: 50%;" alt="Profile Image" class="rounded-profile">
+
+
             </div>
             <h3 id="username"></h3>
             <h4 id="pen-name"></h4>
-            <button>Followers <span id="followers-count"></span></button>
-            <button>Following <span id="following-count"></span></button>
-            
+            <div class="action-btns">
+                <button class="followers-btn">Followers <span id="followers-count"></span></button>
+                <button class="following-btn">Following <span id="following-count"></span></button>
+            </div>
+
         </aside>
 
         <section class="main-content">
@@ -209,22 +330,43 @@ function closeAlert() {
                     <li><a href="index.html">Home</a></li>
                     <li><a href="read.html">Read</a></li>
                     <li><a href="write.html">Write</a></li>
-                    <li><a  class="active" href="profile.html">Your Account</a></li>
+                    <li><a class="active" href="profile.html">Your Account</a></li>
                 </ul>
             </nav>
-            
+
             <div class="story-container">
-                <div id="loader" style="display: flex; justify-content: center; align-items: center; height: 50vh;   width: 80vw;  z-index: 10;">
+                <div id="loader"
+                    style="display: flex; justify-content: center; align-items: center; height: 50vh;   width: 80vw;  z-index: 10;">
                     <div class="loader">
-                      <div></div>
-                      <div></div>
-                      <div></div>
+                        <div></div>
+                        <div></div>
+                        <div></div>
                     </div>
-                  </div>
+                </div>
             </div>
+            <div id="followers-modal" style="display: none;">
+                <div class="modal-content">
+                    <span id="close-modal" class="close-btn">&times;</span>
+                    <h2>Followers</h2>
+                    <ul id="followers-list">
+                        <!-- Follower items will be dynamically injected here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Following Modal -->
+            <div id="following-modal" style="display: none;">
+                <div class="modal-content">
+                    <span id="close-following-modal" class="close-btn">&times;</span>
+                    <h2>Following</h2>
+                    <ul id="following-list"></ul>
+                </div>
+            </div>
+
         </section>
     </div>
 
-  
+
 </body>
+
 </html>

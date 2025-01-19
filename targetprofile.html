@@ -11,6 +11,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script src="firebaseconfig.js"></script>
+    <script src="app.js"></script>
     <style>
         /* Basic styling */
         .profile-page {
@@ -44,9 +45,9 @@
             padding: 20px;
         }
 
-      button{
-        margin: 5px;
-      }
+     
+   
+              
     </style>
 </head>
 <body>
@@ -62,8 +63,11 @@
             </div>
             <h3 id="username"></h3>
             <h4 id="pen-name"></h4>
-            <button>Followers <span id="followers-count">0</span></button>
-            <button>Following <span id="following-count">0</span></button>
+            <div class="action-btns">
+
+                <button id="followers-btn">Followers <span id="followers-count">0</span></button>
+                <button  id="following-btn">Following <span id="following-count">0</span></button>
+            </div>
         </aside>
 
         <!-- Main Content -->
@@ -76,7 +80,7 @@
                     <li><a href="index.html">Home</a></li>
                     <li><a href="read.html">Read</a></li>
                     <li><a href="write.html">Write</a></li>
-                    <li><a  class="active" href="profile.html">Your Account</a></li>
+                    <li><a href="profile.html">Your Account</a></li>
                 </ul>
             </nav>
             <div class="story-container">
@@ -88,15 +92,30 @@
                     </div>
                   </div>
                   <!-- Modal -->
-<div id="userListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6);">
-    <div style="position: relative; margin: 10% auto; padding: 20px; background: white; width: 50%; border-radius: 10px;">
-        <h2 id="modal-title">Users</h2>
-        <ul id="user-list" style="list-style: none; padding: 0;"></ul>
-        <button onclick="closeModal()" style="margin-top: 10px; padding: 10px 20px; background: #FF5722; color: white; border: none; border-radius: 5px;">Close</button>
+                
+                
+              
+
+            </div>
+            <div id="followers-modal" style="display: none;">
+                <div class="modal-content">
+                    <span id="close-modal" class="close-btn">&times;</span>
+                    <h2>Followers</h2>
+                    <ul id="followers-list">
+                        <!-- Follower items will be dynamically injected here -->
+                    </ul>
+                </div>
+            </div>
+
+<!-- Following Modal -->
+<div id="following-modal" style="display: none;">
+    <div class="modal-content">
+        <span id="close-following-modal" class="close-btn">&times;</span>
+        <h2>Following</h2>
+        <ul id="following-list"></ul>
     </div>
 </div>
 
-            </div>
         </section>
     </div>
 
@@ -145,118 +164,166 @@
                 throw new Error("User not found");
             }
         }
-        // load target user stories
-        function loadTargetUserStories(userId) {
-    
-    db.collection("stories").where("userId", "==", userId)
-        .orderBy("createdAt", "desc")
-        .get()
-        .then(snapshot => {
-            const storyList = document.querySelector(".story-container");
-            storyList.innerHTML = "";
+ 
+async function loadTargetUserStories(userId) {
+    try {
+        const snapshot = await db.collection("stories")
+            .where("userId", "==", userId)
+            .orderBy("createdAt", "desc")
+            .get();
 
-            snapshot.forEach(doc => {
-                const storyData = doc.data();
-                const storyItem = document.createElement("div");
-                storyItem.classList.add("story-card");
+        const storyList = document.querySelector(".story-container");
+        storyList.innerHTML = "";
 
-                // Function to format the date
-                const formatDate = (timestamp) => {
-                    // If it's a Firestore Timestamp, convert it to a JavaScript Date object
-                    const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
-                    return date.toLocaleDateString(); // This will format the date (e.g., "12/6/2024")
-                };
+        const formatDate = (timestamp) => {
+            if (!timestamp) return "Unknown Date";
+            const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString();
+        };
 
-                // Get the display date (prioritize updatedAt, fallback to createdAt)
-                const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
+        for (const doc of snapshot.docs) {
+            const storyData = doc.data();
+            const storyItem = document.createElement("div");
+            storyItem.classList.add("story-card");
 
-                // Set the innerHTML with formatted date
-                storyItem.innerHTML = 
-                   `<div class="pro">
-                        <h4>${storyData.title}</h4>
-                        <div><button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
-                       </div>
+            // Format the display date
+            const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
+
+            // Get the current authenticated user
+            const currentUser = firebase.auth().currentUser;
+            const currentUserId = currentUser ? currentUser.uid : null;
+
+            // Check if the current user liked the story
+            const isLiked = currentUserId && storyData.likes && storyData.likes[currentUserId];
+            const likeCount = storyData.likes ? Object.keys(storyData.likes).length : 0;
+
+            // Fetch comment count asynchronously
+            const commentsSnapshot = await db.collection("stories").doc(doc.id).collection("comments").get();
+            const commentCount = commentsSnapshot.size;
+
+            // Conditionally render the cover image
+            const coverImageHTML = storyData.coverImageUrl
+                ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">`
+                : "";
+
+            // Set the story card HTML
+            storyItem.innerHTML = `
+                <div class="pro">
+                    <h4>${storyData.title}</h4>
+                    <div>
+                        <button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
                     </div>
-                    <img src="${storyData.coverImageUrl}" alt="Cover Image"> 
-                    <h4 class="pro">Published on ${displayDate}</h4> `
-                    
-                ;
+                </div>
+                ${coverImageHTML}
+                <div class="story-actioni">
+                    <div class="one">
+                        <button class="like-btn" onclick="likeStory('${doc.id}', event)">
+                            <i class="fa fa-heart ${isLiked ? "liked" : ""}"></i>
+                            <span>${likeCount}</span>
+                        </button>
+                        <button class="comment-btn">
+                            <i class="fa fa-comment"></i>
+                            <span>${commentCount}</span>
+                        </button>
+                    </div>
+                    <div class="two">
+                        <h4>Published on ${displayDate}</h4>
+                    </div>
+                </div>
+            `;
 
-                storyList.appendChild(storyItem);
-            });
-        })
-        .catch(error => {
-            console.error("Error loading stories:", error);
-            showAlert('Error', 'check your connection and try again')
-        });
+            storyList.appendChild(storyItem);
+        }
+    } catch (error) {
+        console.error("Error loading stories:", error);
+        showAlert("Error", "Check your connection and try again");
+    }
 }
 
+// Update Follow Button State
+async function updateFollowButtonState(currentUserId, targetUserId) {
+    if (!currentUserId) return;
 
-        // Update Follow Button State
-        async function updateFollowButtonState(currentUserId, targetUserId) {
-            if (!currentUserId) return;
-            const followDoc = await db.collection("following")
-                .doc(currentUserId)
-                .collection("userFollowing")
-                .doc(targetUserId)
-                .get();
+    try {
+        const currentUserDoc = await db.collection("users").doc(currentUserId).get();
+        if (!currentUserDoc.exists) return;
 
-            if (followDoc.exists) {
-                followBtn.textContent = "Following";
-                followBtn.classList.add("following");
-            } else {
-                followBtn.textContent = "Follow";
-                followBtn.classList.remove("following");
-            }
+        const isFollowing = currentUserDoc.data().following?.includes(targetUserId);
+
+        const followBtn = document.getElementById("follow-btn"); // Assuming follow button has this ID
+        if (isFollowing) {
+            followBtn.textContent = "Unfollow";
+            followBtn.classList.add("following");
+        } else {
+            followBtn.textContent = "Follow";
+            followBtn.classList.remove("following");
+        }
+    } catch (error) {
+        console.error("Error updating follow button state:", error);
+    }
+}
+
+// Update Follower Count in UI
+async function updateFollowerCount(targetUserId) {
+    try {
+        const targetUserDoc = await db.collection("users").doc(targetUserId).get();
+        if (targetUserDoc.exists) {
+            const followersCount = targetUserDoc.data().followers?.length || 0;
+            document.getElementById("followers-count").textContent = followersCount;
+        }
+    } catch (error) {
+        console.error("Error updating follower count in UI:", error);
+    }
+}
+
+// Follow/Unfollow Logic
+async function handleFollowUnfollow(targetUserId) {
+    const currentUserId = auth.currentUser?.uid;
+
+    if (!currentUserId) {
+        alert("Please log in to follow users.");
+        return;
+    }
+
+    const currentUserDocRef = db.collection("users").doc(currentUserId);
+    const targetUserDocRef = db.collection("users").doc(targetUserId);
+
+    try {
+        const currentUserDoc = await currentUserDocRef.get();
+        if (!currentUserDoc.exists) {
+            console.error("Current user document not found.");
+            return;
         }
 
-        // Follow/Unfollow Logic
-        async function handleFollowUnfollow(targetUserId) {
-            const currentUserId = auth.currentUser?.uid;
+        const isFollowing = currentUserDoc.data().following?.includes(targetUserId);
 
-            if (!currentUserId) {
-                alert("Please log in to follow users.");
-                return;
-            }
-
-            const followDocRef = db.collection("following")
-                .doc(currentUserId)
-                .collection("userFollowing")
-                .doc(targetUserId);
-
-            const userDocRef = db.collection("users").doc(targetUserId);
-
-            try {
-                const followDoc = await followDocRef.get();
-
-                if (followDoc.exists) {
-                    // Unfollow the user
-                    await followDocRef.delete();
-                    await userDocRef.update({
-                        followers: firebase.firestore.FieldValue.arrayRemove(currentUserId),
-                    });
-                    followBtn.textContent = "Follow";
-                    followBtn.classList.remove("following");
-                } else {
-                    // Follow the user
-                    await followDocRef.set({ followedAt: firebase.firestore.Timestamp.now() });
-                    await userDocRef.update({
-                        followers: firebase.firestore.FieldValue.arrayUnion(currentUserId),
-                    });
-                    followBtn.textContent = "Following";
-                    followBtn.classList.add("following");
-                }
-
-                // Update Follower Count
-                const updatedUserDoc = await userDocRef.get();
-                const updatedUserData = updatedUserDoc.data();
-                document.getElementById("followers-count").innerText = updatedUserData.followers?.length || 0;
-            } catch (error) {
-                console.error("Error updating follow state:", error);
-            }
+        if (isFollowing) {
+            // Unfollow the user
+            await currentUserDocRef.update({
+                following: firebase.firestore.FieldValue.arrayRemove(targetUserId),
+            });
+            await targetUserDocRef.update({
+                followers: firebase.firestore.FieldValue.arrayRemove(currentUserId),
+            });
+        } else {
+            // Follow the user
+            await currentUserDocRef.update({
+                following: firebase.firestore.FieldValue.arrayUnion(targetUserId),
+            });
+            await targetUserDocRef.update({
+                followers: firebase.firestore.FieldValue.arrayUnion(currentUserId),
+            });
         }
-    
-    
+
+        // Update UI after the database operation
+        updateFollowButtonState(currentUserId, targetUserId);
+        updateFollowerCount(targetUserId); // Dynamically update the follower count
+    } catch (error) {
+        console.error("Error handling follow/unfollow:", error);
+    }
+}
+// Fetch and Display Followers (Directly from Users Collection)
+
     </script>
 </body>
 </html>

@@ -24,52 +24,117 @@ function loadUserProfile(uid) {
 
 
 
+async function loadUserStories() {
+    const userId = auth.currentUser.uid; // Get current user's ID
+    try {
+        const snapshot = await db.collection("stories")
+            .where("userId", "==", userId)
+            .orderBy("createdAt", "desc")
+            .get();
 
+        const storyList = document.querySelector(".story-container");
+        storyList.innerHTML = "";
 
-function loadUserStories() {
-    const userId = auth.currentUser.uid;
-    db.collection("stories").where("userId", "==", userId)
-        .orderBy("createdAt", "desc")
-        .get()
-        .then(snapshot => {
-            const storyList = document.querySelector(".story-container");
-            storyList.innerHTML = "";
+        const formatDate = (timestamp) => {
+            if (!timestamp) return "Unknown Date";
+            const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString();
+        };
 
-            snapshot.forEach(doc => {
-                const storyData = doc.data();
-                const storyItem = document.createElement("div");
-                storyItem.classList.add("story-card");
+        for (const doc of snapshot.docs) {
+            const storyData = doc.data();
+            const storyItem = document.createElement("div");
+            storyItem.classList.add("story-card");
 
-                // Function to format the date
-                const formatDate = (timestamp) => {
-                    // If it's a Firestore Timestamp, convert it to a JavaScript Date object
-                    const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
-                    return date.toLocaleDateString(); // This will format the date (e.g., "12/6/2024")
-                };
+            // Get display date
+            const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
 
-                // Get the display date (prioritize updatedAt, fallback to createdAt)
-                const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
+            // Check if the current user liked the story
+            const isLiked = storyData.likes && storyData.likes[userId];
+            const likeCount = storyData.likes ? Object.keys(storyData.likes).length : 0;
 
-                // Set the innerHTML with formatted date
-                storyItem.innerHTML = `
-                    <div class="pro">
-                        <h4>${storyData.title}</h4>
-                        <div><button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
+            // Fetch comment count asynchronously
+            const commentsSnapshot = await db.collection("stories").doc(doc.id).collection("comments").get();
+            const commentCount = commentsSnapshot.size;
+
+            storyItem.innerHTML = `
+                <div class="pro">
+                    <h4>${storyData.title}</h4>
+                    <div>
+                        <button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
                         <button onclick="editStory('${doc.id}', '${storyData.title}')"><i class="fas fa-edit"></i></button>
-                        <button onclick="deleteStory('${doc.id}')"><i class="fas fa-trash-alt"></i></button></div>
+                        <button onclick="deleteStory('${doc.id}')"><i class="fas fa-trash-alt"></i></button>
                     </div>
-                    ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
-                    <h4 class="pro">Published on ${displayDate}</h4> <!-- Display the formatted date -->
-                `;
+                </div>
+                ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
+                <div class="story-actioni">
+                <div class="one">
+                <button class="like-btn" onclick="likeStory('${doc.id}', event)">
+                <i class="fa fa-heart ${isLiked ? "liked" : ""}"></i>
+                <span>${likeCount}</span>
+                </button>
+                <button class="comment-btn">
+                <i class="fa fa-comment"></i>
+                <span>${commentCount}</span>
+                </button></div>
+                <div class="two">
+                <h4>Published on ${displayDate}</h4></div>
+                </div>
+            `;
 
-                storyList.appendChild(storyItem);
-            });
-        })
-        .catch(error => {
-            console.error("Error loading stories:", error);
-            showAlert('Error', 'check your connection and try again')
-        });
+            storyList.appendChild(storyItem);
+        }
+    } catch (error) {
+        console.error("Error loading stories:", error);
+        showAlert('Error', 'Check your connection and try again');
+    }
 }
+
+
+// function loadUserStories() {
+//     const userId = auth.currentUser.uid;
+//     db.collection("stories").where("userId", "==", userId)
+//         .orderBy("createdAt", "desc")
+//         .get()
+//         .then(snapshot => {
+//             const storyList = document.querySelector(".story-container");
+//             storyList.innerHTML = "";
+
+//             snapshot.forEach(doc => {
+//                 const storyData = doc.data();
+//                 const storyItem = document.createElement("div");
+//                 storyItem.classList.add("story-card");
+
+//                 // Function to format the date
+//                 const formatDate = (timestamp) => {
+//                     // If it's a Firestore Timestamp, convert it to a JavaScript Date object
+//                     const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
+//                     return date.toLocaleDateString(); // This will format the date (e.g., "12/6/2024")
+//                 };
+
+//                 // Get the display date (prioritize updatedAt, fallback to createdAt)
+//                 const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
+
+//                 // Set the innerHTML with formatted date
+//                 storyItem.innerHTML = `
+//                     <div class="pro">
+//                         <h4>${storyData.title}</h4>
+//                         <div><button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
+//                         <button onclick="editStory('${doc.id}', '${storyData.title}')"><i class="fas fa-edit"></i></button>
+//                         <button onclick="deleteStory('${doc.id}')"><i class="fas fa-trash-alt"></i></button></div>
+//                     </div>
+//                     ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
+//                     <h4 class="pro">Published on ${displayDate}</h4> <!-- Display the formatted date -->
+//                 `;
+
+//                 storyList.appendChild(storyItem);
+//             });
+//         })
+//         .catch(error => {
+//             console.error("Error loading stories:", error);
+//             showAlert('Error', 'check your connection and try again')
+//         });
+// }
 
 
 function getStylishHeading(genre) {
@@ -165,37 +230,7 @@ async function loadComments(storyId) {
     }
 }
 
-// // Add a new comment
-// async function addComment(storyId) {
-//     const commentInput = document.getElementById(`comment-input-${storyId}`);
-//     const text = commentInput.value.trim();
-//     const userId = firebase.auth().currentUser.uid;
 
-//     if (!text) return showAlert("Error", "Comment cannot be empty!");
-
-//     try {
-//         const userDoc = await db.collection("users").doc(userId).get();
-//         const username = userDoc.data().username;
-//         const profileImageUrl=userDoc.data().profileImageUrl;
-
-//         await db
-//             .collection("stories")
-//             .doc(storyId)
-//             .collection("comments")
-//             .add({
-//                 username,
-//                 text,
-//                 profileImageUrl,
-//                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-//             });
-
-//         commentInput.value = "";
-//         loadComments(storyId);
-//     } catch (error) {
-//         console.error("Error adding comment:", error);
-//         showAlert("Error", "Error adding comment!try again.");
-//     }
-// }
 
 async function addComment(storyId) {
     const commentInput = document.getElementById(`comment-input-${storyId}`);
@@ -710,3 +745,129 @@ async function displayFollowStats(userId) {
         console.error("Error fetching follow stats:", error);
     }
 }
+async function fetchAndDisplayFollowers(targetUserId) {
+    try {
+        // Get target user's followers array
+        const targetUserDoc = await db.collection("users").doc(targetUserId).get();
+
+        if (!targetUserDoc.exists) {
+            alert("User not found!");
+            return;
+        }
+
+        const followers = targetUserDoc.data().followers || [];
+
+        const followersList = document.getElementById("followers-list");
+        followersList.innerHTML = ""; // Clear previous content
+
+        if (followers.length === 0) {
+            followersList.innerHTML = "<p>No followers yet.</p>";
+            return;
+        }
+
+        // Render followers list by fetching profile img and name from the 'users' collection
+        for (const followerId of followers) {
+            const followerDoc = await db.collection("users").doc(followerId).get();
+
+            if (followerDoc.exists) {
+                const followerData = followerDoc.data();
+                const listItem = document.createElement("li");
+
+                listItem.innerHTML = `
+                  
+                    <a href="targetprofile.html?targetUserId=${followerId}">  <img src="${followerData.profileImageUrl || 'default-profile.png'}" alt="${followerData.name}" /></a>
+                    <span>${followerData.username || 'Anonymous'}</span>
+                `;
+
+                followersList.appendChild(listItem);
+            }
+        }
+    } catch (error) {
+        console.error("Error fetching followers:", error);
+    }
+}
+
+// Event Listener for Followers Button
+document.addEventListener("DOMContentLoaded", () => {
+    const followersBtn = document.getElementById("followers-btn");
+    const followersModal = document.getElementById("followers-modal");
+    const closeModal = document.getElementById("close-modal");
+
+    if (followersBtn && followersModal && closeModal) {
+        followersBtn.addEventListener("click", () => {
+            followersModal.style.display = "flex";
+            fetchAndDisplayFollowers(targetUserId)
+        });
+
+        closeModal.addEventListener("click", () => {
+            followersModal.style.display = "none";
+        });
+
+        window.addEventListener("click", (event) => {
+            if (event.target === followersModal) {
+                followersModal.style.display = "none";
+            }
+        });
+    }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const followingBtn = document.getElementById("following-btn");
+    const followingModal = document.getElementById("following-modal");
+    const closeFollowingModal = document.getElementById("close-following-modal");
+    const followingList = document.getElementById("following-list");
+    const targetUserId = new URLSearchParams(window.location.search).get("targetUserId");
+
+    if (followingBtn && followingModal && closeFollowingModal && followingList) {
+        // Open Following Modal
+        followingBtn.addEventListener("click", async () => {
+            followingModal.style.display = "flex";
+
+            // Clear previous content
+            followingList.innerHTML = "";
+
+            try {
+                // Fetch following data
+                const targetUserDoc = await db.collection("users").doc(targetUserId).get();
+                const following = targetUserDoc.data().following || [];
+
+                if (following.length === 0) {
+                    followingList.innerHTML = "<li>No following to display</li>";
+                } else {
+                    // Fetch profile data for each followed user
+                    const followingPromises = following.map((userId) =>
+                        db.collection("users").doc(userId).get()
+                    );
+
+                    const followingDocs = await Promise.all(followingPromises);
+
+                    followingDocs.forEach((doc) => {
+                        const userData = doc.data();
+                        const listItem = document.createElement("li");
+                        listItem.innerHTML = `
+                            <a href="targetprofile.html?targetUserId=${doc.id}">  <img src="${userData.profileImageUrl || 'default-profile.png'}" alt="${userData.username}" /></a>
+                            <span>${userData.username || "Unknown User"}</span>
+                        `;
+                        followingList.appendChild(listItem);
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching following data:", error);
+                followingList.innerHTML = "<li>Failed to load following list</li>";
+            }
+        });
+
+        // Close Following Modal
+        closeFollowingModal.addEventListener("click", () => {
+            followingModal.style.display = "none";
+        });
+
+        // Close modal when clicking outside of it
+        window.addEventListener("click", (event) => {
+            if (event.target === followingModal) {
+                followingModal.style.display = "none";
+            }
+        });
+    }
+});
+

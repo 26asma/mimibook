@@ -263,7 +263,7 @@ const following=[];
                     // window.location.href = "profile.html";
                 } catch (error) {
                     console.log("Error: " + error.message);
-                    alert("Username already exists or registration failed.");
+                    showAlert("Error", "user already exist");
                 } finally {
                     registerButton.disabled = false;
                     registerButton.innerHTML = 'Register';
