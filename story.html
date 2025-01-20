@@ -63,6 +63,7 @@
             justify-content: center;
             align-items: center;
             gap: 20px;
+            padding: 5px 0;
         }
 
      
@@ -135,7 +136,18 @@
        
         <!-- Story details will be dynamically added here -->
     </div>
-
+      <!-- Modal Template -->
+      <div id="comments-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2>Comments</h2>
+            <div id="modal-comments-list"></div>
+            <div class="add-comment">
+                <input type="text" id="modal-comment-input" placeholder="Add a comment..." />
+                <button id="modal-comment-btn" onclick="">Post Comment</button>
+            </div>
+        </div>
+      </div>
     <!-- Firebase CDN links for SDK version 8 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -174,7 +186,12 @@ async function loadStory() {
         const user = firebase.auth().currentUser; // Check user authentication status
         const userId = user ? user.uid : null;
         const isLiked = user && story.likes && story.likes[userId];
-
+        const commentsSnapshot = await db
+            .collection("stories")
+            .doc(storyId)
+            .collection("comments")
+            .get();
+        const commentCount = commentsSnapshot.size;
         const storyDetails = document.getElementById("story-details");
         storyDetails.innerHTML = `
             <div class="story-head">
@@ -183,6 +200,18 @@ async function loadStory() {
                     <div class="story-title">${story.title}</div>
                     <div class="story-author">By ${story.username}</div>
                     <div class="story-des">${story.description}</div>
+                       <div class="story-action">
+                <button class="like-btn">
+                    
+                    <i class="fa fa-heart ${isLiked ? "liked" : ""}" 
+                       onclick="likeStory('${storyId}', event)"></i>
+                    <span>${story.likes ? Object.keys(story.likes).length : 0}</span>
+                </button>
+                 <button class="comment-btn">
+                                        <i class="fa fa-comment"  onclick="openCommentsModal('${storyId}')"></i>
+                                        <span>${commentCount}</span>
+                                    </button>
+            </div>
                     <button class="read-story" id="generate" onclick="readStory('${storyId}')">listen<i class="fa fa-volume-up"></i></button>
                     <audio id="audio-player" controls style="display:none"></audio>
                 </div>
@@ -190,26 +219,10 @@ async function loadStory() {
             <div class="page">
                 <div class="story-content">${story.content}</div>
             </div>
-            <div class="story-action">
-                <button class="like-btn">
-                    like
-                    <i class="fa fa-heart ${isLiked ? "liked" : ""}" 
-                       onclick="likeStory('${storyId}', event)"></i>
-                    <span>${story.likes ? Object.keys(story.likes).length : 0}</span>
-                </button>
-                <button class="comment-toggle-btn" onclick="toggleComments('${storyId}')">
-                    Comments
-                </button>
-            </div>
-            <div class="comment-section" id="comment-section-${storyId}" style="display: none;">
-                <div class="comms">
-                    <textarea class="comment-input" id="comment-input-${storyId}" placeholder="Add your comment"></textarea>
-                    <button class="comment-btn" onclick="addComment('${storyId}')">Post Comment</button>
-                    <div id="comments-list-${storyId}" class="comments-list"></div>
-                </div>
-            </div>
+         
+       
         `;
-        loadComments(storyId);
+      
     } catch (error) {
         console.error("Error fetching story:", error);
     }

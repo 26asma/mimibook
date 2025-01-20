@@ -216,11 +216,24 @@ padding: 0 10px;
     </div> 
   </div>
  
-   
+      <!-- Modal Template -->
+<div id="comments-modal" class="modal">
+  <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <h2>Comments</h2>
+      <div id="modal-comments-list"></div>
+      <div class="add-comment">
+          <input type="text" id="modal-comment-input" placeholder="Add a comment..." />
+          <button id="modal-comment-btn" onclick="">Post Comment</button>
+      </div>
+  </div>
+</div>
     <!-- Story cards will be dynamically added here -->
     <div id="sections" >
       <!-- Story sections will be dynamically added here -->
     </div>
+ 
+
     <footer>
      
       <div class="footer-bottom">

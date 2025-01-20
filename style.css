@@ -630,7 +630,7 @@ h2.section-heading {
 }
             
                     /* Modal Background */
-                    #followers-modal,#following-modal {
+                    #followers-modal,#following-modal,#comments-modal {
                         position: fixed;
                         top: 0;
                         left: 0;
@@ -642,7 +642,9 @@ h2.section-heading {
                         align-items: center;
                         z-index: 1000;
                     }
-                
+                    #comments-modal{
+                        display: none;
+                    }
                     /* Modal Content */
                     .modal-content {
                         background: #1a1d20;
@@ -718,3 +720,26 @@ h2.section-heading {
  
 }
   
+
+
+
+.add-comment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.add-comment input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+
+
+.add-comment button:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+}

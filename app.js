@@ -73,7 +73,7 @@ async function loadUserStories() {
                 <i class="fa fa-heart ${isLiked ? "liked" : ""}"></i>
                 <span>${likeCount}</span>
                 </button>
-                <button class="comment-btn">
+                <button class="comment-btn" onclick="openCommentsModal('${doc.id}')">
                 <i class="fa fa-comment"></i>
                 <span>${commentCount}</span>
                 </button></div>
@@ -91,50 +91,6 @@ async function loadUserStories() {
 }
 
 
-// function loadUserStories() {
-//     const userId = auth.currentUser.uid;
-//     db.collection("stories").where("userId", "==", userId)
-//         .orderBy("createdAt", "desc")
-//         .get()
-//         .then(snapshot => {
-//             const storyList = document.querySelector(".story-container");
-//             storyList.innerHTML = "";
-
-//             snapshot.forEach(doc => {
-//                 const storyData = doc.data();
-//                 const storyItem = document.createElement("div");
-//                 storyItem.classList.add("story-card");
-
-//                 // Function to format the date
-//                 const formatDate = (timestamp) => {
-//                     // If it's a Firestore Timestamp, convert it to a JavaScript Date object
-//                     const date = timestamp instanceof firebase.firestore.Timestamp ? timestamp.toDate() : new Date(timestamp);
-//                     return date.toLocaleDateString(); // This will format the date (e.g., "12/6/2024")
-//                 };
-
-//                 // Get the display date (prioritize updatedAt, fallback to createdAt)
-//                 const displayDate = formatDate(storyData.updatedAt || storyData.createdAt);
-
-//                 // Set the innerHTML with formatted date
-//                 storyItem.innerHTML = `
-//                     <div class="pro">
-//                         <h4>${storyData.title}</h4>
-//                         <div><button onclick="viewStory('${doc.id}')"><i class="fas fa-eye"></i></button>
-//                         <button onclick="editStory('${doc.id}', '${storyData.title}')"><i class="fas fa-edit"></i></button>
-//                         <button onclick="deleteStory('${doc.id}')"><i class="fas fa-trash-alt"></i></button></div>
-//                     </div>
-//                     ${storyData.coverImageUrl ? `<img src="${storyData.coverImageUrl}" alt="Cover Image">` : ""}
-//                     <h4 class="pro">Published on ${displayDate}</h4> <!-- Display the formatted date -->
-//                 `;
-
-//                 storyList.appendChild(storyItem);
-//             });
-//         })
-//         .catch(error => {
-//             console.error("Error loading stories:", error);
-//             showAlert('Error', 'check your connection and try again')
-//         });
-// }
 
 
 function getStylishHeading(genre) {
@@ -185,25 +141,36 @@ async function likeStory(storyId, event) {
     }
 }
 
-// Toggle comments section visibility
-function toggleComments(storyId) {
-    const commentSection = document.getElementById(`comment-section-${storyId}`);
-    const isHidden = commentSection.style.display === "none";
 
-    if (isHidden) {
-        commentSection.style.display = "block";
-        loadComments(storyId); // Load comments when toggling on
-    } else {
-        commentSection.style.display = "none";
-    }
+
+// Open the modal and load comments
+function openCommentsModal(storyId) {
+    const modal = document.getElementById("comments-modal");
+    const commentsList = document.getElementById("modal-comments-list");
+    const commentInput = document.getElementById("modal-comment-input");
+    const commentButton = document.getElementById("modal-comment-btn");
+
+    modal.style.display = "flex"; // Show modal
+
+    // Clear previous input and set button functionality
+    commentInput.value = "";
+    commentButton.onclick = () => addCommentInModal(storyId);
+
+    // Load comments for the story
+    loadCommentsInModal(storyId);
+    
 }
 
+// Close the modal
+function closeModal() {
+    const modal = document.getElementById("comments-modal");
+    modal.style.display = "none";
+}
 
-
-// Load comments for a story
-async function loadComments(storyId) {
-    const commentsList = document.getElementById(`comments-list-${storyId}`);
-    commentsList.innerHTML = `  <div class="spinner-div"> <span class="spinner"></span></div> `;
+// Load comments inside the modal
+async function loadCommentsInModal(storyId) {
+    const commentsList = document.getElementById("modal-comments-list");
+    commentsList.innerHTML = `<div class="spinner-div"><span class="spinner"></span></div>`;
 
     try {
         const commentsSnapshot = await db
@@ -214,14 +181,23 @@ async function loadComments(storyId) {
             .get();
 
         commentsList.innerHTML = "";
+        if (commentsSnapshot.empty) {
+            commentsList.innerHTML = "<p>No comments yet.</p>";
+            return;
+        }
         commentsSnapshot.forEach((doc) => {
+            const uid = doc.id
             const comment = doc.data();
             const commentElement = document.createElement("div");
-            commentElement.innerHTML = `<div class="coms">
-            <div class="userimg"><img src=${comment.profileImageUrl}></div>
-            <div class="com">
-            <div class="commenter">${comment.username}</div>
-            <div class="comment-content"> ${comment.text}</div></div></div><hr>`;
+            commentElement.innerHTML = `
+                <div class="coms">
+                    <div class="userimg"><img src="${comment.profileImageUrl}" alt="${comment.username}'s profile"></div>
+                    <div class="com">
+                        <div class="commenter">${comment.username}</div>
+                        <div class="comment-content">${comment.text}</div>
+                    </div>
+                </div>
+                <hr>`;
             commentsList.appendChild(commentElement);
         });
     } catch (error) {
@@ -230,34 +206,26 @@ async function loadComments(storyId) {
     }
 }
 
-
-
-async function addComment(storyId) {
-    const commentInput = document.getElementById(`comment-input-${storyId}`);
-    const commentButton = document.querySelector(`.comment-btn[onclick*="${storyId}"]`);
-
+// Add comment from modal
+async function addCommentInModal(storyId) {
+    const commentInput = document.getElementById("modal-comment-input");
+    const commentButton = document.getElementById("modal-comment-btn");
     const text = commentInput.value.trim();
-    const userId = auth.currentUser.uid; // Assuming auth is initialized globally
 
-    // Validate if comment text is provided
     if (!text) {
-        showAlert("Error", "Comment cannot be empty!");
+        showAlert("comments cannot be empty","please enter a comment")
         return;
     }
 
-    // Disable the button and show loading state
     commentButton.disabled = true;
-    commentButton.innerHTML = `<div class="spinner-div"><span class="spinner"></span></div>`;
+    commentButton.innerText = "Posting...";
 
     try {
-        // Fetch user details
-        const userDoc = await db.collection("users").doc(userId).get();
-        if (!userDoc.exists) {
-            throw new Error("User profile not found.");
-        }
+        const userDoc = await db.collection("users").doc(auth.currentUser.uid).get();
+        if (!userDoc.exists) throw new Error("User profile not found.");
+
         const { username, profileImageUrl } = userDoc.data();
 
-        // Add the comment to Firestore
         await db
             .collection("stories")
             .doc(storyId)
@@ -269,20 +237,17 @@ async function addComment(storyId) {
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
             });
 
-        // Clear input and reload comments
         commentInput.value = "";
-        loadComments(storyId);
-        showAlert("Success", "Comment added successfully!");
+        loadCommentsInModal(storyId); // Reload comments
     } catch (error) {
         console.error("Error adding comment:", error);
-        showAlert("Error", "Failed to add comment. Please try again.");
+        showAlertalert("Failed to add comment" ,
+            "Please try again.");
     } finally {
-        // Restore the button state
         commentButton.disabled = false;
-        commentButton.innerHTML = "Post Comment"; // Restore original button text
+        commentButton.innerText = "Post Comment";
     }
 }
-
 
 
 // Text-to-Speech API Configuration
@@ -418,6 +383,10 @@ function openStory(storyId) {
 
 
 async function generateStory(genre, description) {
+    if(!genre && !description){
+        showAlert("Error","please provide Title and Description")
+        return;
+    }
     const url = 'https://open-ai21.p.rapidapi.com/chatgpt';
     const options = {
         method: 'POST',
@@ -452,7 +421,7 @@ async function generateStory(genre, description) {
             throw new Error(`Failed to generate story: ${response.status}`);
         }
         const result = await response.json();
-        console.log(result);
+       
         let story = document.getElementById('story-content');
         story.textContent = result.result;
 
@@ -464,7 +433,9 @@ async function generateStory(genre, description) {
 
         generateButton.disabled = false;
         generateButton.innerHTML = 'Generate Story';
+    
     }
+
 }
 
 
@@ -627,7 +598,7 @@ async function loadStoriesByGenre() {
                                         <span>${story.likeCount}</span>
                                     </button>
                                     <button class="comment-btn">
-                                        <i class="fa fa-comment"></i>
+                                        <i class="fa fa-comment"  onclick="openCommentsModal('${story.id}')"></i>
                                         <span>${story.commentCount}</span>
                                     </button>
                                 </div>
@@ -707,8 +678,8 @@ async function loadMostLikedStories() {
                                            onclick="likeStory('${story.id}', event)"></i>
                                         <span>${story.likeCount}</span>
                                     </button>
-                                    <button class="comment-btn">
-                                        <i class="fa fa-comment"></i>
+                                    <button class="comment-btn" >
+                                        <i class="fa fa-comment" onclick="openCommentsModal('${story.id}')"></i>
                                         <span>${story.commentCount}</span>
                                     </button>
                                 </div>
